@@ -1,0 +1,60 @@
+name: fitpro-validation
+
+services:
+  db:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    environment:
+      POSTGRES_USER: fitpro_test_migrator
+      POSTGRES_PASSWORD: ${FITPRO_TEST_DB_PASSWORD:?Defina uma senha descartável FITPRO_TEST_DB_PASSWORD}
+      POSTGRES_DB: fitpro_validation
+      FITPRO_TEST_APP_PASSWORD: ${FITPRO_TEST_APP_PASSWORD:?Defina uma senha descartável FITPRO_TEST_APP_PASSWORD}
+    volumes:
+      - ./tests/db-init:/docker-entrypoint-initdb.d:ro
+    # Test database lives only for this container; never reuse the application's
+    # persistent postgres_data volume, even if Compose project names collide.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fitpro_test_migrator -d fitpro_validation"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    build:
+      context: .
+      target: test
+    environment: &test_environment
+      ENV: testing
+      DEBUG: "false"
+      DEV_MODE: "false"
+      SIGNUP_ENABLED: "false"
+      POSTGRES_USER: fitpro_test_migrator
+      POSTGRES_PASSWORD: ${FITPRO_TEST_DB_PASSWORD:?Defina uma senha descartável FITPRO_TEST_DB_PASSWORD}
+      POSTGRES_DB: fitpro_validation
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      SECRET_KEY: fitpro-validation-only-secret-not-for-production
+      PII_ENCRYPTION_KEY: eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=
+      PII_LOOKUP_KEY: eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXk=
+      SESSION_COOKIE_SECURE: "false"
+      CORS_ORIGINS: http://testserver
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "-m", "tests.run_migration_validation"]
+
+  tests:
+    build:
+      context: .
+      target: test
+    environment:
+      <<: *test_environment
+      POSTGRES_USER: fitpro_app
+      POSTGRES_PASSWORD: ${FITPRO_TEST_APP_PASSWORD:?Defina uma senha descartável FITPRO_TEST_APP_PASSWORD}
+      TEST_MIGRATOR_PASSWORD: ${FITPRO_TEST_DB_PASSWORD:?Defina uma senha descartável FITPRO_TEST_DB_PASSWORD}
+      RUN_RLS_INTEGRATION: "1"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    command: ["python", "-m", "tests.verify_migration_data"]

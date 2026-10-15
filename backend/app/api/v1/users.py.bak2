@@ -1,0 +1,96 @@
+"""Owner-only lifecycle for the single additional account user."""
+import uuid
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, HTTPException, Request, status
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
+
+from app.core.deps import CurrentTenant, DBSession, OwnerUser
+from app.core.security import hash_password
+from app.services.audit_service import add_event
+from app.models.session import Session as SessionModel
+from app.models.tenant import Tenant
+from app.models.user import User
+from app.schemas.user import UserAccessUpdate, UserCreate, UserPublic
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("", response_model=list[UserPublic])
+def list_users(db: DBSession, tenant: CurrentTenant, owner: OwnerUser) -> list[UserPublic]:
+    stmt = select(User).where(User.tenant_id == tenant.id).order_by(User.role, User.name)
+    return [UserPublic.model_validate(u) for u in db.execute(stmt).scalars().all()]
+
+
+@router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+def create_user(
+    payload: UserCreate, db: DBSession, owner: OwnerUser, tenant: CurrentTenant, request: Request,
+) -> UserPublic:
+    # Serializes invitations for this tenant; the partial unique index is the DB backstop.
+    db.execute(select(Tenant.id).where(Tenant.id == tenant.id).with_for_update()).scalar_one()
+    active_member = db.execute(select(User.id).where(
+        User.tenant_id == tenant.id, User.role == "member", User.status == "active"
+    )).scalar_one_or_none()
+    if active_member is not None:
+        raise HTTPException(status_code=409, detail="A conta já possui um usuário adicional ativo.")
+
+    email = str(payload.email).lower().strip()
+    duplicate = db.execute(select(User.id).where(func.lower(User.email) == email)).scalar_one_or_none()
+    if duplicate is not None:
+        raise HTTPException(status_code=409, detail="Este e-mail já está cadastrado.")
+
+    user = User(
+        tenant_id=tenant.id, name=payload.name.strip(), email=email,
+        password_hash=hash_password(payload.password), role="member",
+        access_profile=payload.access_profile, status="active",
+    )
+    db.add(user)
+    try:
+        db.flush()
+        add_event(db, request, "ACCOUNT_MEMBER_CREATED", tenant_id=tenant.id, user_id=owner.id, resource="user", resource_id=user.id)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Limite de usuário adicional atingido ou e-mail indisponível.") from exc
+    db.refresh(user)
+    return UserPublic.model_validate(user)
+
+
+@router.patch("/{user_id}", response_model=UserPublic)
+def update_user_access(
+    user_id: uuid.UUID, payload: UserAccessUpdate, db: DBSession,
+    owner: OwnerUser, tenant: CurrentTenant, request: Request,
+) -> UserPublic:
+    user = db.execute(select(User).where(
+        User.id == user_id, User.tenant_id == tenant.id,
+        User.role == "member", User.status == "active",
+    )).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuário adicional não encontrado.")
+    user.access_profile = payload.access_profile
+    add_event(db, request, "ACCOUNT_MEMBER_PROFILE_CHANGED", tenant_id=tenant.id, user_id=owner.id, resource="user", resource_id=user.id)
+    db.commit()
+    db.refresh(user)
+    return UserPublic.model_validate(user)
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_user(
+    user_id: uuid.UUID, db: DBSession, owner: OwnerUser, tenant: CurrentTenant, request: Request,
+) -> None:
+    user = db.execute(select(User).where(
+        User.id == user_id, User.tenant_id == tenant.id, User.role == "member",
+    ).with_for_update()).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=404, detail="Usuário adicional não encontrado.")
+    if user.status == "blocked":
+        return
+    user.status = "blocked"
+    db.execute(
+        SessionModel.__table__.update()
+        .where(SessionModel.user_id == user.id, SessionModel.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
+    add_event(db, request, "ACCOUNT_MEMBER_REVOKED", tenant_id=tenant.id, user_id=owner.id, resource="user", resource_id=user.id)
+    db.commit()

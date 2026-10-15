@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in - FortexaGym</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>tailwind.config = { darkMode: 'class' };</script>
+  <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/logo-fort-icon.png" alt="FortexaGym" class="w-12 h-12 rounded-xl" />
+        <div>
+          <h1 class="text-2xl font-black tracking-tight text-white">Check-in <span class="text-orange-400">FortexaGym</span></h1>
+          <p class="text-sm text-slate-400" id="today-label">Carregando...</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto p-6">
+
+    <div class="grid grid-cols-4 gap-3 mb-6">
+      <div class="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Agendados</div>
+        <div class="text-2xl font-black text-white" id="kpi-total">0</div>
+      </div>
+      <div class="bg-slate-900 rounded-2xl border border-emerald-500/30 p-4">
+        <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1">Chegaram</div>
+        <div class="text-2xl font-black text-emerald-400" id="kpi-present">0</div>
+      </div>
+      <div class="bg-slate-900 rounded-2xl border border-amber-500/30 p-4">
+        <div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-1">Aguardando</div>
+        <div class="text-2xl font-black text-amber-400" id="kpi-waiting">0</div>
+      </div>
+      <div class="bg-slate-900 rounded-2xl border border-rose-500/30 p-4">
+        <div class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-1">Faltaram</div>
+        <div class="text-2xl font-black text-rose-400" id="kpi-missed">0</div>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <div class="relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-lg"></i>
+        <input id="search" type="text" placeholder="Digite o nome do aluno..." autocomplete="off"
+          class="w-full bg-slate-900 border-2 border-slate-800 rounded-2xl pl-14 pr-5 py-4 text-lg text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition" />
+      </div>
+    </div>
+
+    <div id="list" class="space-y-3">
+      <div class="text-center py-12 text-slate-500">
+        <i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i>
+        <p>Carregando alunos...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de remarcação -->
+  <div id="modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-white text-lg">Não vou poder vir</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+      <p class="text-sm text-slate-400">Aluno: <span id="modal-student" class="text-white font-bold"></span></p>
+
+      <label class="block text-xs font-bold text-slate-400 uppercase">Nova data</label>
+      <input type="date" id="modal-date" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 focus:outline-none" />
+
+      <label class="block text-xs font-bold text-slate-400 uppercase">Novo horário (opcional)</label>
+      <input type="text" id="modal-time" placeholder="Ex: 19:00" maxlength="10" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none" />
+
+      <label class="block text-xs font-bold text-slate-400 uppercase">Motivo da falta (opcional)</label>
+      <textarea id="modal-reason" rows="3" placeholder="Ex: Aluno avisou que está doente" maxlength="1000"
+        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none resize-none"></textarea>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-bold">Cancelar</button>
+        <button id="modal-confirm" class="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-black">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-6 right-6 space-y-2 z-50"></div>
+
+  <script>
+    let schedule = [];
+    let searchTerm = '';
+    let currentStudentId = null;
+
+    function formatBR(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}`;
+    }
+
+    async function loadToday() {
+      try {
+        const res = await fetch('/api/v1/checkins/today', { credentials: 'include' });
+        if (res.status === 401) { window.location.href = '/'; return; }
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        schedule = data.students || [];
+        document.getElementById('kpi-total').textContent = data.total_scheduled;
+        document.getElementById('kpi-present').textContent = data.total_checked_in;
+        document.getElementById('kpi-missed').textContent = data.total_missed || 0;
+        const waiting = Math.max(0, (data.total_scheduled || 0) - (data.total_checked_in || 0) - (data.total_missed || 0));
+        document.getElementById('kpi-waiting').textContent = waiting;
+        document.getElementById('today-label').textContent =
+          new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+        render();
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar: ' + err.message, 'error');
+      }
+    }
+
+    function initials(name) {
+      return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+    }
+
+    function renderCard(s) {
+      let borderClass = 'bg-slate-900 border-slate-800 hover:border-slate-700';
+      if (s.checked_in) borderClass = 'bg-emerald-950/40 border-emerald-500/40';
+      else if (s.missed_today) borderClass = 'bg-rose-950/30 border-rose-500/40';
+      else if (s.scheduled) borderClass = 'bg-slate-900 border-orange-500/40';
+
+      const badges = [];
+      if (s.scheduled && !s.missed_today && !s.checked_in) {
+        badges.push('<span class="text-[10px] px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 font-bold uppercase tracking-wider">Hoje</span>');
+      }
+      if (s.missed_today && s.missed_info) {
+        const info = s.missed_info;
+        badges.push(`<span class="text-[10px] px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 font-bold uppercase tracking-wider">Faltou</span>`);
+        badges.push(`<span class="text-[10px] px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 font-semibold">Remarcado ${formatBR(info.missed_date)} → ${formatBR(info.new_date)}</span>`);
+      }
+      if (s.rescheduled_to_today && s.rescheduled_info) {
+        badges.push(`<span class="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider">Remarcado de ${formatBR(s.rescheduled_info.missed_date)}</span>`);
+      }
+
+      const reasonBlock = s.missed_info && s.missed_info.reason
+        ? `<div class="text-xs text-rose-300/80 mt-1 italic">"${s.missed_info.reason}"</div>`
+        : '';
+
+      return `
+        <div class="p-5 rounded-2xl border-2 transition ${borderClass}">
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="flex items-center gap-4 min-w-0 flex-1">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg shrink-0 ${s.checked_in ? 'bg-emerald-500 text-slate-950' : s.missed_today ? 'bg-rose-500/30 text-rose-200' : 'bg-slate-800 text-slate-300'}">
+                ${initials(s.name)}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-lg font-bold text-white truncate flex items-center gap-2 flex-wrap">
+                  ${s.name}
+                  ${badges.join(' ')}
+                </div>
+                <div class="text-sm text-slate-400">
+                  ${s.workout_time || 'Sem horário'} • Prof: ${s.coach_name || '—'}
+                </div>
+                ${s.checked_in_at
+                  ? `<div class="text-sm text-emerald-400 font-semibold mt-1"><i class="fa-solid fa-check-circle"></i> Chegou às ${new Date(s.checked_in_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</div>`
+                  : ''}
+                ${reasonBlock}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              ${s.checked_in
+                ? `<div class="px-5 py-3 rounded-xl bg-emerald-500/20 text-emerald-300 font-bold text-sm"><i class="fa-solid fa-check"></i> Presente</div>`
+                : s.missed_today
+                  ? `<div class="px-5 py-3 rounded-xl bg-rose-500/20 text-rose-300 font-bold text-sm"><i class="fa-solid fa-xmark"></i> Faltou</div>`
+                  : `
+                    <button onclick="openModal('${s.id}', '${s.name.replace(/'/g, "\\'")}')"
+                      class="px-4 py-3 rounded-xl border border-rose-500/40 text-rose-300 hover:bg-rose-500/10 font-bold text-sm transition active:scale-95">
+                      <i class="fa-solid fa-calendar-xmark"></i> Não vou vir
+                    </button>
+                    <button onclick="confirmArrival('${s.id}')"
+                      class="px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-black text-sm transition active:scale-95">
+                      <i class="fa-solid fa-hand-wave"></i> Chegou
+                    </button>
+                  `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+      const q = searchTerm.toLowerCase().trim();
+      const filtered = schedule.filter(s => !q || s.name.toLowerCase().includes(q));
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-12 text-slate-500 bg-slate-900/50 rounded-2xl border border-dashed border-slate-800">
+            <i class="fa-solid fa-user-slash text-3xl mb-3"></i>
+            <p>${searchTerm ? 'Nenhum aluno encontrado' : 'Nenhum aluno cadastrado'}</p>
+          </div>`;
+        return;
+      }
+
+      if (searchTerm) {
+        list.innerHTML = filtered.map(renderCard).join('');
+        return;
+      }
+
+      const scheduled = filtered.filter(s => s.scheduled && !s.missed_today);
+      const rescheduled = filtered.filter(s => s.rescheduled_to_today && !s.missed_today);
+      const missed = filtered.filter(s => s.missed_today);
+      const others = filtered.filter(s => !s.scheduled && !s.missed_today && !s.rescheduled_to_today);
+
+      let html = '';
+
+      if (scheduled.length > 0) {
+        html += `<div class="flex items-center gap-3 mt-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center"><i class="fa-solid fa-calendar-check text-orange-400 text-sm"></i></div>
+          <h2 class="text-base font-bold text-white">Agendados hoje</h2>
+          <span class="text-xs font-bold text-orange-400">${scheduled.length}</span>
+        </div><div class="space-y-3">${scheduled.map(renderCard).join('')}</div>`;
+      }
+
+      if (rescheduled.length > 0) {
+        html += `<div class="flex items-center gap-3 mt-8 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center"><i class="fa-solid fa-rotate text-amber-400 text-sm"></i></div>
+          <h2 class="text-base font-bold text-white">Remarcados para hoje</h2>
+          <span class="text-xs font-bold text-amber-400">${rescheduled.length}</span>
+        </div><div class="space-y-3">${rescheduled.map(renderCard).join('')}</div>`;
+      }
+
+      if (missed.length > 0) {
+        html += `<div class="flex items-center gap-3 mt-8 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center"><i class="fa-solid fa-xmark text-rose-400 text-sm"></i></div>
+          <h2 class="text-base font-bold text-white">Faltaram hoje</h2>
+          <span class="text-xs font-bold text-rose-400">${missed.length}</span>
+        </div><div class="space-y-3">${missed.map(renderCard).join('')}</div>`;
+      }
+
+      if (others.length > 0) {
+        html += `<div class="flex items-center gap-3 mt-8 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><i class="fa-solid fa-users text-slate-400 text-sm"></i></div>
+          <h2 class="text-base font-bold text-white">Outros alunos</h2>
+          <span class="text-xs font-bold text-slate-400">${others.length}</span>
+        </div><div class="space-y-3">${others.map(renderCard).join('')}</div>`;
+      }
+
+      list.innerHTML = html;
+    }
+
+    function openModal(studentId, studentName) {
+      currentStudentId = studentId;
+      document.getElementById('modal-student').textContent = studentName;
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const iso = tomorrow.toISOString().slice(0, 10);
+      document.getElementById('modal-date').value = iso;
+      const student = schedule.find(s => s.id === studentId);
+      document.getElementById('modal-time').value = student?.workout_time || '';
+      document.getElementById('modal-reason').value = '';
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+      currentStudentId = null;
+    }
+
+    async function confirmReschedule() {
+      if (!currentStudentId) return;
+      const newDate = document.getElementById('modal-date').value;
+      const newTime = document.getElementById('modal-time').value.trim();
+      const reason = document.getElementById('modal-reason').value.trim();
+      if (!newDate) { showToast('Escolha uma data', 'error'); return; }
+
+      const btn = document.getElementById('modal-confirm');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+
+      try {
+        const res = await fetch('/api/v1/checkins/reschedule/' + currentStudentId, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_date: newDate, new_time: newTime || null, reason }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'HTTP ' + res.status);
+        }
+        showToast('Remarcação salva!', 'success');
+        closeModal();
+        await loadToday();
+      } catch (err) {
+        showToast('Erro: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Confirmar';
+      }
+    }
+
+    async function confirmArrival(studentId) {
+      try {
+        const res = await fetch('/api/v1/checkins/confirm/' + studentId, {
+          method: 'POST', credentials: 'include',
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'HTTP ' + res.status);
+        }
+        const student = schedule.find(s => s.id === studentId);
+        showToast(`${student ? student.name : 'Aluno'} — chegada confirmada!`, 'success');
+        await loadToday();
+      } catch (err) {
+        showToast('Erro: ' + err.message, 'error');
+      }
+    }
+
+    function showToast(msg, type) {
+      const colors = type === 'error'
+        ? 'bg-rose-500/20 border-rose-500/50 text-rose-200'
+        : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200';
+      const toast = document.createElement('div');
+      toast.className = `px-5 py-3 rounded-xl border ${colors} font-semibold text-sm shadow-2xl transition-opacity`;
+      toast.textContent = msg;
+      document.getElementById('toast').appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+
+    document.getElementById('search').addEventListener('input', (e) => {
+      searchTerm = e.target.value;
+      render();
+    });
+
+    document.getElementById('modal-confirm').addEventListener('click', confirmReschedule);
+
+    loadToday();
+    setInterval(loadToday, 30000);
+  </script>
+</body>
+</html>

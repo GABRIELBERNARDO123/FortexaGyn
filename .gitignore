@@ -1,0 +1,43 @@
+# ═══ Sistema ═══
+.DS_Store
+*.log
+Thumbs.db
+
+# ═══ Backend ═══
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.dump
+backup_*.sql
+
+# ═══ Frontend ═══
+node_modules/
+dist/
+build/
+.vite/
+playwright-report/
+test-results/
+.e2e/
+
+# ═══ Backups locais ═══
+*.bak
+*.bak.*
+
+# ═══ SENSÍVEIS — NUNCA subir ═══
+.env
+.env.*
+!.env.example
+secrets/
+pii_keys*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.*

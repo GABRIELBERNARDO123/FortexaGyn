@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+html.theme-minimal {
+  color-scheme: dark;
+}
+
+html.theme-minimal body {
+  background-color: #121316 !important;
+  color: #e2e8f0 !important;
+}
+
+html.theme-minimal aside,
+html.theme-minimal header,
+html.theme-minimal .bg-slate-950,
+html.theme-minimal .bg-slate-900,
+html.theme-minimal .bg-slate-900\/70,
+html.theme-minimal .bg-slate-900\/60,
+html.theme-minimal .bg-slate-900\/80 {
+  background-color: #16181d !important;
+  border-color: #262930 !important;
+}
+
+html.theme-minimal * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html.theme-minimal .shadow-lg,
+html.theme-minimal .shadow-md,
+html.theme-minimal .shadow-sm,
+html.theme-minimal .shadow-2xl,
+html.theme-minimal .shadow-emerald-500\/20,
+html.theme-minimal .shadow-emerald-500\/30 {
+  box-shadow: none !important;
+}
+
+html.theme-minimal .blur-xl,
+html.theme-minimal .backdrop-blur-md,
+html.theme-minimal .backdrop-blur-sm {
+  backdrop-filter: none !important;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

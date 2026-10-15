@@ -1,0 +1,203 @@
+import { useState, useEffect } from 'react';
+import type { GymConfig } from '../types';
+import { api } from '../lib/api';
+
+interface AccountData {
+  id: string;
+  name: string;
+  pix_key: string | null;
+  pix_name: string | null;
+  phone: string | null;
+  address: string | null;
+}
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  config: GymConfig;
+  isDarkMode: boolean;
+  canManageUsers: boolean;
+  canEditAccount: boolean;
+  onUserCreated?: () => void;
+  onAccountUpdated?: () => void;
+}
+
+export function SettingsModal({
+  isOpen, onClose, config, canManageUsers, canEditAccount, onUserCreated, onAccountUpdated,
+}: Props) {
+  const [tab, setTab] = useState<'geral' | 'usuarios'>('geral');
+
+  const [gymName, setGymName] = useState('');
+  const [pixKey, setPixKey] = useState('');
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
+
+  const [users, setUsers] = useState<any[]>([]);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Carrega account (owner) ao abrir
+  useEffect(() => {
+    if (isOpen) {
+      api.get<AccountData>('/account')
+        .then((data) => {
+          setGymName(data.name || '');
+          setPixKey(data.pix_key || '');
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && tab === 'usuarios' && canManageUsers) {
+      api.get<any[]>('/users').then(setUsers).catch((e) => setError(String(e)));
+    }
+  }, [isOpen, tab, canManageUsers]);
+
+  useEffect(() => {
+    if (!canManageUsers && tab === 'usuarios') setTab('geral');
+  }, [canManageUsers, tab]);
+
+  if (!isOpen) return null;
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAccount(true);
+    setAccountError(null); setAccountSuccess(null);
+    try {
+      await api.patch<AccountData>('/account', {
+        name: gymName,
+        pix_key: pixKey,
+      });
+      setAccountSuccess('Configurações salvas.');
+      onAccountUpdated?.();
+    } catch (err: any) {
+      const d = err?.detail;
+      setAccountError(typeof d === 'string' ? d : 'Erro ao salvar');
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null); setSuccess(null);
+    try {
+      await api.post('/users', { name: newUserName, email: newUserEmail, password: newUserPassword });
+      setSuccess('Usuário criado!');
+      setNewUserName(''); setNewUserEmail(''); setNewUserPassword('');
+      const list = await api.get<any[]>('/users');
+      setUsers(list);
+      onUserCreated?.();
+    } catch (err: any) {
+      const d = err?.detail;
+      setError(typeof d === 'string' ? d : 'Erro ao criar usuário');
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm('Remover este usuário do tenant?')) return;
+    setError(null); setSuccess(null);
+    try {
+      await api.delete(`/users/${id}`);
+      setSuccess('Usuário removido.');
+      setUsers(await api.get<any[]>('/users'));
+    } catch (err: any) {
+      const d = err?.detail;
+      setError(typeof d === 'string' ? d : 'Erro ao remover usuário');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h4 className="font-bold text-white text-sm">Configurações</h4>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+        </div>
+
+        <div className="flex gap-1 p-1 rounded-xl bg-slate-800/60">
+          <button onClick={() => setTab('geral')} className={`flex-1 py-2 rounded-lg text-xs font-bold ${tab === 'geral' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'}`}>Geral</button>
+          {canManageUsers && <button onClick={() => setTab('usuarios')} className={`flex-1 py-2 rounded-lg text-xs font-bold ${tab === 'usuarios' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'}`}>Usuários</button>}
+        </div>
+
+        {tab === 'geral' && (
+          <form onSubmit={handleSaveAccount} className="space-y-3">
+            {!canEditAccount && (
+              <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                Somente o proprietário pode editar as configurações da conta.
+              </p>
+            )}
+
+            {canEditAccount && accountError && (
+              <div className="text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded">{accountError}</div>
+            )}
+            {canEditAccount && accountSuccess && (
+              <div className="text-[11px] text-emerald-400 bg-emerald-500/10 p-2 rounded">{accountSuccess}</div>
+            )}
+
+            <label className="block text-[11px] font-bold text-slate-400 uppercase">Nome da Instituição</label>
+            <input
+              value={gymName}
+              onChange={(e) => setGymName(e.target.value)}
+              readOnly={!canEditAccount}
+              maxLength={120}
+              placeholder={canEditAccount ? 'Ex: Academia Canãa Fit' : ''}
+              className={`w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 focus:border-emerald-500 focus:outline-none ${canEditAccount ? 'text-slate-100' : 'text-slate-400'}`}
+            />
+
+            <label className="block text-[11px] font-bold text-slate-400 uppercase">Chave PIX</label>
+            <input
+              value={pixKey}
+              onChange={(e) => setPixKey(e.target.value)}
+              readOnly={!canEditAccount}
+              maxLength={200}
+              placeholder={canEditAccount ? 'CPF, CNPJ, email, telefone ou chave aleatória' : ''}
+              className={`w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 focus:border-emerald-500 focus:outline-none ${canEditAccount ? 'text-slate-100' : 'text-slate-400'}`}
+            />
+
+            {canEditAccount && (
+              <button
+                type="submit"
+                disabled={savingAccount}
+                className="w-full py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 disabled:opacity-50"
+              >
+                {savingAccount ? 'Salvando…' : 'Salvar'}
+              </button>
+            )}
+          </form>
+        )}
+
+        {tab === 'usuarios' && canManageUsers && (
+          <div className="space-y-3">
+            <div className="text-[11px] font-bold text-slate-400 uppercase">Usuários do tenant ({users.filter((u: any) => u.role !== 'owner').length}/2)</div>
+            <div className="space-y-2">
+              {users.map((u) => (
+                <div key={u.id} className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-700 flex items-center justify-between">
+                  <div><div className="text-xs font-bold text-slate-200">{u.name}</div><div className="text-[11px] text-slate-400">{u.email}</div></div>
+                  <div className="flex items-center gap-2"><span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold">{u.role}</span>{u.role !== 'owner' && <button type="button" onClick={() => void handleDeleteUser(u.id)} className="text-[10px] font-semibold text-rose-300 hover:text-rose-200">Remover</button>}</div>
+                </div>
+              ))}
+            </div>
+
+            {users.filter((u: any) => u.role !== 'owner').length < 2 && (
+              <form onSubmit={handleCreateUser} className="space-y-2 pt-3 border-t border-slate-800">
+                <div className="text-[11px] font-bold text-slate-400 uppercase">Adicionar 2º usuário (member)</div>
+                {error && <div className="text-[11px] text-rose-400 bg-rose-500/10 p-2 rounded">{error}</div>}
+                {success && <div className="text-[11px] text-emerald-400 bg-emerald-500/10 p-2 rounded">{success}</div>}
+                <input required value={newUserName} onChange={(e) => setNewUserName(e.target.value)} placeholder="Nome" className="w-full text-xs rounded-xl px-3 py-2 bg-slate-800 border border-slate-700 text-slate-100" />
+                <input required type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="Email" className="w-full text-xs rounded-xl px-3 py-2 bg-slate-800 border border-slate-700 text-slate-100" />
+                <input required type="password" minLength={8} value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} placeholder="Senha (mín. 8)" className="w-full text-xs rounded-xl px-3 py-2 bg-slate-800 border border-slate-700 text-slate-100" />
+                <button type="submit" className="w-full py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950">Criar member</button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

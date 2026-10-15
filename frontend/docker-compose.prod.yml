@@ -1,0 +1,9 @@
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    ports:
+      - "3001:3000"      # ← ADICIONA ESSA LINHA
+    environment:
+      - BACKEND_URL=http://api:8000
