@@ -25,6 +25,62 @@ export default function App() {
 
   const [theme, setTheme] = useState<AppTheme>('dark');
 
+  // ─── Menu colapsável (3 estados), persistido em localStorage ───
+  const [menuState, setMenuState] = useState<'aberto' | 'icones' | 'oculto'>(() => {
+    try {
+      const s = localStorage.getItem('fx-menu');
+      if (s === 'aberto' || s === 'icones' || s === 'oculto') return s;
+    } catch {}
+    return 'aberto';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-menu', menuState);
+    try { localStorage.setItem('fx-menu', menuState); } catch {}
+
+    // FIX: força largura da sidebar via JS (Tailwind v4 corta o CSS)
+    const apply = () => {
+      const aside = document.querySelector('aside');
+      if (!aside) return;
+      if (menuState === 'oculto') {
+        aside.style.setProperty('display', 'none', 'important');
+        aside.style.setProperty('width', '0', 'important');
+        aside.style.setProperty('min-width', '0', 'important');
+      } else if (menuState === 'icones') {
+        aside.style.setProperty('display', 'flex', 'important');
+        aside.style.setProperty('width', '72px', 'important');
+        aside.style.setProperty('min-width', '72px', 'important');
+        aside.style.setProperty('max-width', '72px', 'important');
+        aside.style.setProperty('flex-shrink', '0', 'important');
+      } else {
+        aside.style.removeProperty('display');
+        aside.style.removeProperty('width');
+        aside.style.removeProperty('min-width');
+        aside.style.removeProperty('max-width');
+        aside.style.removeProperty('flex-shrink');
+      }
+    };
+    apply();
+    const t = setTimeout(apply, 100);
+    return () => clearTimeout(t);
+  }, [menuState]);
+
+  useEffect(() => {
+    if (menuState === 'oculto') {
+      document.querySelector<HTMLButtonElement>('.fx-menu-fab')?.focus();
+    } else if (menuState === 'icones') {
+      document.querySelector<HTMLButtonElement>('[data-menu-act="mais"]')?.focus();
+    }
+  }, [menuState]);
+
+  const stepMenu = (dir: 1 | -1) => setMenuState((s) => {
+    // ordem crescente: oculto → icones → aberto
+    // -1 recolhe (encolhe), +1 expande (volta)
+    const ordem = ['oculto', 'icones', 'aberto'] as const;
+    const i = ordem.indexOf(s) + dir;
+    return ordem[Math.max(0, Math.min(2, i))] as typeof s;
+  });
+
   // Quando o usuário loga/muda, aplica o tema salvo dele como padrão da sessão.
   // Durante a sessão, ele pode trocar (mudança é local até recarregar).
   useEffect(() => {
@@ -35,7 +91,36 @@ export default function App() {
   // Sincroniza tema com CSS (data-tema no <html>)
   useEffect(() => {
     const map: Record<AppTheme, string> = { dark: 'escuro', light: 'claro', minimal: 'minimal' };
-    document.documentElement.setAttribute('data-tema', map[theme]);
+    const html = document.documentElement;
+    html.setAttribute('data-tema', map[theme]);
+    // Tailwind dark mode: liga class="dark" só quando não for claro
+    if (theme === 'light') {
+      html.classList.remove('dark');
+    } else {
+      html.classList.add('dark');
+    }
+  }, [theme]);
+
+  // force-input-color: Tailwind injeta text-slate-100 nos componentes,
+  // vencendo o CSS global. Inline style com !important é imune.
+  useEffect(() => {
+    if (theme !== 'light') return;
+
+    const fix = () => {
+      document.querySelectorAll<HTMLElement>('input, textarea, select').forEach((el) => {
+        el.style.setProperty('color', '#111111', 'important');
+        el.style.setProperty('-webkit-text-fill-color', '#111111', 'important');
+        el.style.setProperty('caret-color', '#111111', 'important');
+        el.style.setProperty('background-color', '#FFFFFF', 'important');
+      });
+    };
+
+    fix();
+    const t = setTimeout(fix, 400);
+    const obs = new MutationObserver(fix);
+    obs.observe(document.body, { childList: true, subtree: true });
+
+    return () => { clearTimeout(t); obs.disconnect(); };
   }, [theme]);
   const isDarkMode = theme === 'dark' || theme === 'minimal';
 
@@ -164,9 +249,21 @@ export default function App() {
         onOpenExportModal={() => addToast('A exportação standalone ainda não está disponível.', 'warning')}
         isOpenMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
+        menuState={menuState}
+        onMenuStep={stepMenu}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen relative">
+        <button
+          type="button"
+          className="fx-menu-fab"
+          data-menu-act="mais"
+          aria-label="Mostrar menu"
+          title="Mostrar menu"
+          onClick={() => stepMenu(1)}
+        >
+          {'››'}
+        </button>
         <Header
           activeTab={activeTab}
           isDarkMode={isDarkMode}

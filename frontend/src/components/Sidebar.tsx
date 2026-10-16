@@ -23,12 +23,15 @@ interface Props {
   onOpenExportModal: () => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  menuState: 'aberto' | 'icones' | 'oculto';
+  onMenuStep: (dir: 1 | -1) => void;
 }
 
 export const Sidebar: React.FC<Props> = ({
   activeTab, user, onTabChange, isDarkMode, onToggleTheme, currentTheme = 'dark', onSelectTheme,
   config, activeStudentsCount, pendingPaymentsCount, todayBirthdayCount, todayScheduledCount,
   onOpenSettings, onOpenExportModal, isOpenMobile, onCloseMobile,
+  menuState, onMenuStep,
 }) => {
   const navItems = [
     { id: 'overview' as TabType, label: 'Visão Geral', icon: LayoutDashboard, badge: todayBirthdayCount > 0 ? `${todayBirthdayCount} niver` : undefined, badgeColor: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
@@ -46,18 +49,26 @@ export const Sidebar: React.FC<Props> = ({
   return (
     <>
       {isOpenMobile && <div onClick={onCloseMobile} className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-40 md:hidden" />}
-      <aside className={`fixed md:sticky top-0 left-0 h-screen w-64 lg:w-72 flex-shrink-0 flex flex-col justify-between z-40 transition-transform duration-300 md:translate-x-0 ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'} ${isDarkMode ? 'bg-slate-950 border-r border-slate-800 text-slate-100' : 'bg-white border-r border-slate-200 text-slate-800 shadow-sm'}`}>
+      <aside className={`fixed md:sticky top-0 left-0 h-screen ${menuState === "icones" ? "w-[72px]" : menuState === "oculto" ? "w-0 overflow-hidden" : "w-64 lg:w-72"} flex-shrink-0 flex flex-col justify-between z-40 transition-transform duration-300 md:translate-x-0 ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'} ${isDarkMode ? 'bg-slate-950 border-r border-slate-800 text-slate-100' : 'bg-white border-r border-slate-200 text-slate-800 shadow-sm'}`} style={{ width: menuState === "icones" ? 72 : menuState === "oculto" ? 0 : undefined, minWidth: menuState === "icones" ? 72 : undefined, maxWidth: menuState === "icones" ? 72 : undefined, display: menuState === "oculto" ? "none" : undefined, transition: "width 200ms ease" }}>
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
           <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/logo-fort-icon.png" alt="FortexaGym" className="w-10 h-10 rounded-xl shadow-lg shadow-orange-500/20 object-cover" />
-              <div className="min-w-0">
+              <div className="min-w-0 fx-menu-txt">
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-base tracking-tight text-white">Fortexa<span className="text-orange-500">Gym</span></span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-medium">{config.gymName}</p>
               </div>
             </div>
+          </div>
+          <div className="fx-menu-ctl">
+            <button type="button" onClick={() => onMenuStep(-1)} aria-label="Recolher menu" title="Recolher menu">
+              {'‹‹'} <span className="fx-menu-txt">Recolher</span>
+            </button>
+            {menuState === 'icones' && (
+              <button type="button" onClick={() => onMenuStep(1)} aria-label="Expandir menu" title="Expandir menu">{'››'}</button>
+            )}
           </div>
           <nav className="p-3.5 space-y-1">
             {navItems.filter((item) => item.id === 'conta' || can(user, ({ overview: 'students:read', dashboard: 'reports:read_operational', checkin: 'checkins:read', alunos: 'students:read', financeiro: 'finance:read', loja: 'products:read', treinos: 'workouts:read', avaliacoes: 'assessments:read', professores: 'coaches:read' } as Partial<Record<TabType, string>>)[item.id] || '')).map((item) => {
@@ -68,10 +79,10 @@ export const Sidebar: React.FC<Props> = ({
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 group ${isActive ? (isDarkMode ? 'bg-slate-900 text-emerald-400 border border-slate-800 shadow-sm' : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-sm font-bold') : (isDarkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70')}`}>
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-emerald-500' : isDarkMode ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-400 group-hover:text-slate-600'}`} />
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate fx-menu-txt">{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold shrink-0 tabular-nums ${item.badgeColor || (isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600')}`}>{item.badge}</span>
+                    <span className={`fx-menu-badge text-[10px] px-2 py-0.5 rounded-md font-semibold shrink-0 tabular-nums ${menuState === 'icones' ? 'fx-menu-badge--dot' : ''} ${item.badgeColor || (isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600')}`}>{item.badge}</span>
                   )}
                 </button>
               );
@@ -79,7 +90,7 @@ export const Sidebar: React.FC<Props> = ({
           </nav>
         </div>
         <div className="p-3.5 border-t border-slate-200 dark:border-slate-800/80 space-y-2">
-          <div className="space-y-1">
+          <div className="space-y-1 fx-menu-aparencia">
             <>
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
               <span>Aparência</span>
@@ -102,7 +113,7 @@ export const Sidebar: React.FC<Props> = ({
             <div className="flex items-center gap-2.5"><Settings className="w-4 h-4 text-slate-400" /><span>Configurações PIX</span></div>
             <i className="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
           </button>
-          <button onClick={onOpenExportModal} className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition ${isDarkMode ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-700 hover:bg-emerald-50'}`}>
+          <button onClick={onOpenExportModal} className={`fx-menu-export w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition ${isDarkMode ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-emerald-700 hover:bg-emerald-50'}`}>
             <Download className="w-3.5 h-3.5" /><span>Exportar Standalone HTML</span>
           </button>
         </div>
