@@ -44,7 +44,7 @@ def create_user(
     user = User(
         tenant_id=tenant.id, name=payload.name.strip(), email=email,
         password_hash=hash_password(payload.password), role="member",
-        access_profile=payload.access_profile, status="active",
+        access_profile=payload.access_profile, theme=payload.theme, status="active",
     )
     db.add(user)
     try:
@@ -69,7 +69,10 @@ def update_user_access(
     )).scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuário adicional não encontrado.")
-    user.access_profile = payload.access_profile
+    if payload.access_profile is not None:
+        user.access_profile = payload.access_profile
+    if "theme" in payload.model_fields_set:
+        user.theme = payload.theme
     add_event(db, request, "ACCOUNT_MEMBER_PROFILE_CHANGED", tenant_id=tenant.id, user_id=owner.id, resource="user", resource_id=user.id)
     db.commit()
     db.refresh(user)

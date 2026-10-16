@@ -37,6 +37,7 @@ class User(UUIDMixin, CreatedAtMixin, UpdatedAtMixin, Base):
     access_profile: Mapped[str] = mapped_column(
         String(32), nullable=False, server_default="read_only"
     )
+    theme: Mapped[str | None] = mapped_column(String(20), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
 
     tenant: Mapped["Tenant"] = relationship(back_populates="users")  # noqa: F821

@@ -144,10 +144,6 @@
         badges.push(`<span class="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wider">Remarcado de ${formatBR(s.rescheduled_info.missed_date)}</span>`);
       }
 
-      const reasonBlock = s.missed_info && s.missed_info.reason
-        ? `<div class="text-xs text-rose-300/80 mt-1 italic">"${s.missed_info.reason}"</div>`
-        : '';
-
       return `
         <div class="p-5 rounded-2xl border-2 transition ${borderClass}">
           <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -166,7 +162,7 @@
                 ${s.checked_in_at
                   ? `<div class="text-sm text-emerald-400 font-semibold mt-1"><i class="fa-solid fa-check-circle"></i> Chegou às ${new Date(s.checked_in_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</div>`
                   : ''}
-                ${reasonBlock}
+                
               </div>
             </div>
             <div class="flex items-center gap-2 shrink-0">

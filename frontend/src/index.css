@@ -1,8 +1,286 @@
 @import "tailwindcss";
 
+/* ══════════════════════════════════════════════════════════════════
+   FortexaGym · Paleta base (temas escuro/minimal herdam daqui)
+   ══════════════════════════════════════════════════════════════════ */
+@theme {
+  /* emerald → laranja da marca */
+  --color-emerald-50:  #fff8e6;
+  --color-emerald-100: #ffefc2;
+  --color-emerald-200: #ffdf85;
+  --color-emerald-300: #ffcb48;
+  --color-emerald-400: #ffb733;
+  --color-emerald-500: #ffa400;
+  --color-emerald-600: #f29a00;
+  --color-emerald-700: #c97d00;
+  --color-emerald-800: #a06500;
+  --color-emerald-900: #7a4d00;
+  --color-emerald-950: #3d2600;
+
+  /* slate → tons quentes */
+  --color-slate-50:  #faf7f0;
+  --color-slate-100: #f6f1e7;
+  --color-slate-200: #e6dfd0;
+  --color-slate-300: #d0c8b8;
+  --color-slate-400: #bdb4a3;
+  --color-slate-500: #8d8574;
+  --color-slate-600: #5a5446;
+  --color-slate-700: #433d33;
+  --color-slate-800: #211e19;
+  --color-slate-900: #181613;
+  --color-slate-950: #0f0e0c;
+
+  /* orange → reforço da marca */
+  --color-orange-50:  #fff8e6;
+  --color-orange-100: #ffefc2;
+  --color-orange-200: #ffdf85;
+  --color-orange-300: #ffcb48;
+  --color-orange-400: #ffb733;
+  --color-orange-500: #ffa400;
+  --color-orange-600: #f29a00;
+  --color-orange-700: #c97d00;
+  --color-orange-800: #a06500;
+  --color-orange-900: #7a4d00;
+  --color-orange-950: #3d2600;
+
+  /* rose → vermelho quente */
+  --color-rose-300: #ffa69c;
+  --color-rose-400: #ff8579;
+  --color-rose-500: #ff6b5e;
+  --color-rose-600: #d94e42;
+
+  /* amber → amarelo quente */
+  --color-amber-300: #ffd97a;
+  --color-amber-400: #ffc448;
+  --color-amber-500: #f2a900;
+  --color-amber-600: #c98a00;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TEMA ESCURO — fundo mais profundo + laranja mais brilhante
+   ══════════════════════════════════════════════════════════════════ */
+[data-tema="escuro"] {
+  --color-slate-950: #060504;
+  --color-slate-900: #0d0b09;
+  --color-slate-800: #17140f;
+  --color-slate-700: #2a251d;
+  --color-slate-100: #faf6ec;
+  --color-slate-400: #c8bfae;
+  --color-emerald-300: #ffd97a;
+  --color-emerald-400: #ffc766;
+  --color-emerald-500: #ffb733;
+  --color-emerald-600: #f5aa00;
+  --color-orange-300: #ffd97a;
+  --color-orange-400: #ffc766;
+  --color-orange-500: #ffb733;
+  --color-orange-600: #f5aa00;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TEMA CLARO — ajustes de cor (fundo + texto), sem mexer em layout
+   ══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] {
+  /* Bordas mais escuras pra marcar os blocos brancos */
+  --color-slate-200: #d4cbb3;
+  --color-slate-300: #b8ad93;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   1) FUNDOS ESCUROS → BRANCO/BEGE (cards, painéis, chips, modais)
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] [class*="bg-slate-800"]:not([class*="bg-rose-"]):not([class*="bg-red-"]),
+[data-tema="claro"] [class*="bg-slate-900"]:not([class*="bg-rose-"]):not([class*="bg-red-"]),
+[data-tema="claro"] [class*="bg-slate-950"]:not([class*="bg-rose-"]):not([class*="bg-red-"]),
+[data-tema="claro"] [class*="bg-gray-800"],
+[data-tema="claro"] [class*="bg-gray-900"],
+[data-tema="claro"] [class*="bg-neutral-800"],
+[data-tema="claro"] [class*="bg-neutral-900"],
+[data-tema="claro"] [class*="bg-zinc-800"],
+[data-tema="claro"] [class*="bg-zinc-900"],
+[data-tema="claro"] [class*="bg-black"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E3D2B0;
+}
+
+/* Modal com backdrop */
+[data-tema="claro"] [class*="backdrop-blur"] {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2) FUNDO VERMELHO/ROSE → ROSA BEM CLARO (card de falta)
+   Só afeta bg-rose-* / bg-red-* (não toca em outros)
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] [class*="bg-rose-950"],
+[data-tema="claro"] [class*="bg-rose-900"],
+[data-tema="claro"] [class*="bg-rose-800"],
+[data-tema="claro"] [class*="bg-rose-500"],
+[data-tema="claro"] [class*="bg-rose-400"],
+[data-tema="claro"] [class*="bg-red-950"],
+[data-tema="claro"] [class*="bg-red-900"],
+[data-tema="claro"] [class*="bg-red-800"],
+[data-tema="claro"] [class*="bg-red-500"] {
+  background-color: #FDECEA !important;
+  border-color: #8A1C1C !important;
+}
+
+/* Avatar com fundo vermelho claro */
+[data-tema="claro"] [class*="bg-rose-500"][class*="rounded"]:not(button):not(button *) {
+  background-color: #F8D2CD !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3) TEXTO VERMELHO → #B3261E / #8A1C1C
+   ═══════════════════════════════════════════════════════════════════ */
+/* Títulos e ícones de alerta */
+[data-tema="claro"] .text-rose-500,
+[data-tema="claro"] .text-rose-600,
+[data-tema="claro"] .text-red-500,
+[data-tema="claro"] .text-red-600 {
+  color: #B3261E !important;
+}
+
+/* Textos/etiquetas pequenas sobre fundo claro */
+[data-tema="claro"] .text-rose-200,
+[data-tema="claro"] .text-rose-300,
+[data-tema="claro"] .text-rose-400,
+[data-tema="claro"] .text-red-300,
+[data-tema="claro"] .text-red-400 {
+  color: #8A1C1C !important;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4) TEXTO VERDE → #1B6B3A
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] .text-emerald-300,
+[data-tema="claro"] .text-emerald-400,
+[data-tema="claro"] .text-emerald-500,
+[data-tema="claro"] .text-emerald-600,
+[data-tema="claro"] .text-green-300,
+[data-tema="claro"] .text-green-400,
+[data-tema="claro"] .text-green-500 {
+  color: #1B6B3A !important;
+}
+
+/* Fundo verde suave pra etiquetas/avisos de sucesso */
+[data-tema="claro"] [class*="bg-emerald-500/1"],
+[data-tema="claro"] [class*="bg-emerald-500/2"],
+[data-tema="claro"] [class*="bg-emerald-950"],
+[data-tema="claro"] [class*="bg-green-500/1"] {
+  background-color: #E3F5E8 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5) ESTADO SELECIONADO / ATIVO (laranja claro)
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] [aria-selected="true"],
+[data-tema="claro"] [aria-current="page"],
+[data-tema="claro"] [data-state="active"],
+[data-tema="claro"] [data-active="true"] {
+  background-color: #FFE2A8 !important;
+  border-color: #8A4F00 !important;
+  color: #2B1A0A !important;
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6) TEXTO PRINCIPAL E APOIO
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] .text-white,
+[data-tema="claro"] .text-slate-100,
+[data-tema="claro"] .text-slate-200,
+[data-tema="claro"] .text-slate-300,
+[data-tema="claro"] .text-slate-600,
+[data-tema="claro"] .text-slate-700,
+[data-tema="claro"] .text-slate-800,
+[data-tema="claro"] .text-slate-900 {
+  color: #2B1A0A !important;
+}
+
+[data-tema="claro"] .text-slate-400,
+[data-tema="claro"] .text-slate-500 {
+  color: #5C3A12 !important;
+}
+
+/* Destaques laranja */
+[data-tema="claro"] .text-orange-300,
+[data-tema="claro"] .text-orange-400,
+[data-tema="claro"] .text-amber-400 {
+  color: #8A4F00 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7) ETIQUETA "Remarcado" — se ficar sobre fundo escuro, letra clara
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] [class*="bg-slate-700"] {
+  background-color: #FFFFFF !important;
+  color: #2B1A0A !important;
+  border: 1px solid #E3D2B0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8) CAMPOS — placeholder nunca vermelho
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] select,
+[data-tema="claro"] option,
+[data-tema="claro"] input,
+[data-tema="claro"] textarea {
+  background-color: #FFFFFF !important;
+  color: #2B1A0A !important;
+  border-color: #E3D2B0 !important;
+}
+
+[data-tema="claro"] input::placeholder,
+[data-tema="claro"] textarea::placeholder {
+  color: #5C3A12 !important;
+  opacity: 1 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9) EXCEÇÃO — botões escuros intencionais (mantidos)
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] .bg-slate-800.text-white,
+[data-tema="claro"] .bg-slate-800.text-slate-100,
+[data-tema="claro"] .bg-slate-800 .text-white,
+[data-tema="claro"] .bg-slate-800 .text-slate-100,
+[data-tema="claro"] .bg-slate-900.text-white,
+[data-tema="claro"] .bg-slate-900.text-slate-100,
+[data-tema="claro"] .bg-slate-900 .text-white,
+[data-tema="claro"] .bg-slate-900 .text-slate-100,
+[data-tema="claro"] .bg-slate-950.text-white,
+[data-tema="claro"] .bg-slate-950.text-slate-100,
+[data-tema="claro"] .bg-slate-950 .text-white,
+[data-tema="claro"] .bg-slate-950 .text-slate-100 {
+  background-color: #211e19 !important;
+  color: #f6f1e7 !important;
+}
+
+[data-tema="claro"] ::selection {
+  background-color: #FFA400;
+  color: #2B1A0A;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10) VERMELHO/VERDE SOBRE FUNDO DE MESMA COR → suavizar o fundo
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] .bg-rose-500\/20,
+[data-tema="claro"] .bg-rose-500\/30,
+[data-tema="claro"] .bg-rose-500\/40,
+[data-tema="claro"] .bg-emerald-500\/20,
+[data-tema="claro"] .bg-emerald-500\/30,
+[data-tema="claro"] .bg-emerald-500\/40 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
 @layer base {
   :root {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+  html, body, #root {
+    background-color: #0f0e0c;
+    color: #f6f1e7;
+    min-height: 100%;
   }
 }
 
@@ -14,61 +292,169 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: rgba(255, 164, 0, 0.25);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
+  background: rgba(255, 164, 0, 0.45);
 }
 
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
+/* ═══════════════════════════════════════════════════════════════════
+   TEMA CLARO — motivo da falta (linha em itálico dentro do card Faltou)
+   Classe única: text-rose-300/80 (só em CheckinTodayList.tsx linha 154)
+   Cor sólida #7A1515 (vinho escuro) para contraste em fundo claro.
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] [class*="text-rose-300/80"] {
+  color: #7A1515 !important;
+  opacity: 1 !important;
 }
 
-html.theme-minimal {
-  color-scheme: dark;
+/* ═══════════════════════════════════════════════════════════════════
+   TEMA CLARO — texto digitado em campos (input/textarea/select)
+   Cor preta #111111, cursor #111111, fundo branco, placeholder #5C3A12
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] input,
+[data-tema="claro"] textarea,
+[data-tema="claro"] select {
+  color: #111111 !important;
+  caret-color: #111111 !important;
+  background-color: #FFFFFF !important;
 }
 
-html.theme-minimal body {
-  background-color: #121316 !important;
-  color: #e2e8f0 !important;
+[data-tema="claro"] input::placeholder,
+[data-tema="claro"] textarea::placeholder {
+  color: #5C3A12 !important;
+  opacity: 1 !important;
 }
 
-html.theme-minimal aside,
-html.theme-minimal header,
-html.theme-minimal .bg-slate-950,
-html.theme-minimal .bg-slate-900,
-html.theme-minimal .bg-slate-900\/70,
-html.theme-minimal .bg-slate-900\/60,
-html.theme-minimal .bg-slate-900\/80 {
-  background-color: #16181d !important;
-  border-color: #262930 !important;
+/* Selects (opções) no tema claro */
+[data-tema="claro"] select option {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
 }
 
-html.theme-minimal * {
-  box-shadow: none !important;
-  text-shadow: none !important;
+/* Autofill do navegador (Chrome/Safari) */
+[data-tema="claro"] input:-webkit-autofill,
+[data-tema="claro"] input:-webkit-autofill:hover,
+[data-tema="claro"] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #111111 !important;
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  box-shadow: 0 0 0 1000px #FFFFFF inset !important;
 }
 
-html.theme-minimal .shadow-lg,
-html.theme-minimal .shadow-md,
-html.theme-minimal .shadow-sm,
-html.theme-minimal .shadow-2xl,
-html.theme-minimal .shadow-emerald-500\/20,
-html.theme-minimal .shadow-emerald-500\/30 {
-  box-shadow: none !important;
+/* ═══════════════════════════════════════════════════════════════════
+   TEMA CLARO — REFORÇO: campos + rótulos + selects
+   Cobre input, textarea, select, option, placeholder, autofill e labels
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Texto digitado (valor dentro do campo) */
+[data-tema="claro"] input,
+[data-tema="claro"] textarea,
+[data-tema="claro"] select {
+  color: #111111 !important;
+  caret-color: #111111 !important;
+  background-color: #FFFFFF !important;
 }
 
-html.theme-minimal .blur-xl,
-html.theme-minimal .backdrop-blur-md,
-html.theme-minimal .backdrop-blur-sm {
-  backdrop-filter: none !important;
+/* Placeholder (dica dentro do campo vazio) */
+[data-tema="claro"] input::placeholder,
+[data-tema="claro"] textarea::placeholder {
+  color: #5C3A12 !important;
+  opacity: 1 !important;
 }
 
-.scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+/* Options do <select> (cada linha do dropdown) */
+[data-tema="claro"] select option,
+[data-tema="claro"] select optgroup {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
 }
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+
+/* Inputs do tipo data, hora, número */
+[data-tema="claro"] input[type="date"],
+[data-tema="claro"] input[type="time"],
+[data-tema="claro"] input[type="datetime-local"],
+[data-tema="claro"] input[type="number"] {
+  color: #111111 !important;
+  background-color: #FFFFFF !important;
+}
+
+/* Autofill do Chrome/Safari (fundo amarelo/azul automático) */
+[data-tema="claro"] input:-webkit-autofill,
+[data-tema="claro"] input:-webkit-autofill:hover,
+[data-tema="claro"] input:-webkit-autofill:focus,
+[data-tema="claro"] textarea:-webkit-autofill,
+[data-tema="claro"] select:-webkit-autofill {
+  -webkit-text-fill-color: #111111 !important;
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  caret-color: #111111 !important;
+}
+
+/* Rótulos (label) e textos de apoio que usam slate claro */
+[data-tema="claro"] label,
+[data-tema="claro"] .text-slate-300,
+[data-tema="claro"] .text-slate-400 {
+  color: #111111 !important;
+}
+
+/* Placeholder do select (opção vazia "Selecione um aluno") */
+[data-tema="claro"] select:invalid,
+[data-tema="claro"] select option[value=""] {
+  color: #5C3A12 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TEMA CLARO — REFORÇO DEFINITIVO: campos + labels + selects
+   Usa -webkit-text-fill-color (resolve autofill do Chrome)
+   ═══════════════════════════════════════════════════════════════════ */
+[data-tema="claro"] input,
+[data-tema="claro"] textarea,
+[data-tema="claro"] select {
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  caret-color: #111111 !important;
+  background-color: #FFFFFF !important;
+}
+
+[data-tema="claro"] input::placeholder,
+[data-tema="claro"] textarea::placeholder {
+  color: #5C3A12 !important;
+  -webkit-text-fill-color: #5C3A12 !important;
+  opacity: 1 !important;
+}
+
+[data-tema="claro"] select option {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+/* Autofill agressivo */
+[data-tema="claro"] input:-webkit-autofill,
+[data-tema="claro"] input:-webkit-autofill:hover,
+[data-tema="claro"] input:-webkit-autofill:focus,
+[data-tema="claro"] input:-webkit-autofill:active,
+[data-tema="claro"] textarea:-webkit-autofill,
+[data-tema="claro"] select:-webkit-autofill {
+  -webkit-text-fill-color: #111111 !important;
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  box-shadow: 0 0 0 1000px #FFFFFF inset !important;
+  caret-color: #111111 !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+/* Labels e textos de apoio (o "Selecione um item da lista") */
+[data-tema="claro"] label,
+[data-tema="claro"] label span,
+[data-tema="claro"] .text-slate-300,
+[data-tema="claro"] .text-slate-400,
+[data-tema="claro"] .text-slate-500 {
+  color: #2B1A0A !important;
+}
+
+/* Placeholder do <select> vazio (option com valor vazio) */
+[data-tema="claro"] select option[value=""] {
+  color: #5C3A12 !important;
+  -webkit-text-fill-color: #5C3A12 !important;
 }

@@ -80,6 +80,7 @@ export const Sidebar: React.FC<Props> = ({
         </div>
         <div className="p-3.5 border-t border-slate-200 dark:border-slate-800/80 space-y-2">
           <div className="space-y-1">
+            <>
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
               <span>Aparência</span>
               <span>{currentTheme === 'dark' ? 'Cyber Fit' : currentTheme === 'light' ? 'Claro' : 'Minimal'}</span>
@@ -95,6 +96,7 @@ export const Sidebar: React.FC<Props> = ({
                 <Feather className="w-3.5 h-3.5 mb-0.5" /><span>Minimal</span>
               </button>
             </div>
+            </>
           </div>
           <button onClick={onOpenSettings} className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium transition ${isDarkMode ? 'bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'}`}>
             <div className="flex items-center gap-2.5"><Settings className="w-4 h-4 text-slate-400" /><span>Configurações PIX</span></div>

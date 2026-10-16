@@ -24,6 +24,19 @@ export default function App() {
   const { user, tenant, loading: authLoading, logout, refresh } = useAuth();
 
   const [theme, setTheme] = useState<AppTheme>('dark');
+
+  // Quando o usuário loga/muda, aplica o tema salvo dele como padrão da sessão.
+  // Durante a sessão, ele pode trocar (mudança é local até recarregar).
+  useEffect(() => {
+    if (user?.theme) setTheme(user.theme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Sincroniza tema com CSS (data-tema no <html>)
+  useEffect(() => {
+    const map: Record<AppTheme, string> = { dark: 'escuro', light: 'claro', minimal: 'minimal' };
+    document.documentElement.setAttribute('data-tema', map[theme]);
+  }, [theme]);
   const isDarkMode = theme === 'dark' || theme === 'minimal';
 
   useEffect(() => {

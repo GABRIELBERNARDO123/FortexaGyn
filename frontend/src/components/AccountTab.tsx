@@ -34,6 +34,7 @@ export function AccountTab({ user, tenant, onLogout, onRefresh }: {
   const [memberEmail, setMemberEmail] = useState('');
   const [memberPassword, setMemberPassword] = useState('');
   const [profile, setProfile] = useState<UserPublic['access_profile']>('operational');
+  const [memberTheme, setMemberTheme] = useState<'' | 'dark' | 'light' | 'minimal'>('');
   const [loading, setLoading] = useState(isOwner);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -63,8 +64,8 @@ export function AccountTab({ user, tenant, onLogout, onRefresh }: {
   const createMember = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true); setError(''); setSuccess('');
     try {
-      await api.post('/users', { name: memberName, email: memberEmail, password: memberPassword, access_profile: profile });
-      setMemberName(''); setMemberEmail(''); setMemberPassword('');
+      await api.post('/users', { name: memberName, email: memberEmail, password: memberPassword, access_profile: profile, theme: memberTheme || null });
+      setMemberName(''); setMemberEmail(''); setMemberPassword(''); setMemberTheme('');
       await load(); setSuccess('Usuário criado. Combine a senha inicial por um canal seguro.');
     } catch (cause) { setError(errorMessage(cause)); }
     finally { setSaving(false); }
@@ -77,6 +78,15 @@ export function AccountTab({ user, tenant, onLogout, onRefresh }: {
     setMemberPassword('');
     setError(''); setSuccess('');
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
+  const updateTheme = async (member: UserPublic, next: 'dark' | 'light' | 'minimal' | null) => {
+    setSaving(true); setError(''); setSuccess('');
+    try {
+      await api.patch(`/users/${member.id}`, { theme: next });
+      await load(); setSuccess('Tema atualizado.');
+    } catch (cause) { setError(errorMessage(cause)); }
+    finally { setSaving(false); }
   };
 
   const updateProfile = async (member: UserPublic, next: UserPublic['access_profile']) => {
@@ -171,6 +181,14 @@ export function AccountTab({ user, tenant, onLogout, onRefresh }: {
                           </select>
                         </label>
                         <p className="text-xs leading-relaxed text-slate-400">{descriptions[member.access_profile]}</p>
+                        <label className="block space-y-1 text-sm text-slate-300">Tema (Aparência)
+                          <select className={field} value={member.theme ?? ''} disabled={saving} onChange={(event) => void updateTheme(member, event.target.value === '' ? null : (event.target.value as 'dark' | 'light' | 'minimal'))}>
+                            <option value="">Livre (usuário escolhe)</option>
+                            <option value="dark">Escuro</option>
+                            <option value="light">Claro</option>
+                            <option value="minimal">Minimal</option>
+                          </select>
+                        </label>
                         <button type="button" disabled={saving} onClick={() => void revokeMember(member)} className="rounded-xl border border-rose-500/30 px-3 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-50"><X className="mr-1 inline" size={15} />Revogar acesso</button>
                       </>
                     )}
@@ -187,6 +205,14 @@ export function AccountTab({ user, tenant, onLogout, onRefresh }: {
                 <label className="space-y-1 text-sm text-slate-300 sm:col-span-2">Senha inicial (mínimo 12 caracteres)<input required type="password" minLength={12} maxLength={128} autoComplete="new-password" className={field} value={memberPassword} onChange={(e) => setMemberPassword(e.target.value)} /></label>
                 <label className="space-y-1 text-sm text-slate-300 sm:col-span-2">Perfil
                   <select className={field} value={profile} onChange={(e) => setProfile(e.target.value as UserPublic['access_profile'])}>{Object.entries(profileLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select>
+                </label>
+                <label className="space-y-1 text-sm text-slate-300 sm:col-span-2">Tema (Aparência)
+                  <select className={field} value={memberTheme} onChange={(e) => setMemberTheme(e.target.value as '' | 'dark' | 'light' | 'minimal')}>
+                    <option value="">Livre (usuário escolhe)</option>
+                    <option value="dark">Escuro</option>
+                    <option value="light">Claro</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
                 </label>
                 <p className="text-xs leading-relaxed text-slate-400 sm:col-span-2">{descriptions[profile]} Compartilhe a senha inicial por canal seguro.</p>
                 <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 disabled:opacity-50 sm:col-span-2"><UserPlus size={16} />{saving ? 'Criando…' : 'Adicionar usuário'}</button>

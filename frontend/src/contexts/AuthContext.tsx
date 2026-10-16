@@ -18,6 +18,7 @@ export interface UserPublic {
   email: string;
   role: 'owner' | 'member';
   access_profile: 'read_only' | 'operational' | 'operations_admin' | 'tablet_checkin';
+  theme: 'dark' | 'light' | 'minimal' | null;
   status: 'active' | 'blocked';
   created_at: string;
 }
