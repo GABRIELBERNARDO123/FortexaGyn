@@ -58,3 +58,44 @@ def delete_transaction(tx_id: uuid.UUID, db: DBSession, tenant: CurrentTenant):
     transaction_service.delete_transaction(db, tenant.id, tx_id)
 
 
+
+
+# =========================================================================
+# PENDÊNCIAS DE PAGAMENTO (Fluxo de Caixa)
+# =========================================================================
+
+@router.get("/pending", dependencies=[permission_dependency("finance:read")])
+def list_pending_transactions(db: DBSession, tenant: CurrentTenant):
+    """Lista alunos ativos que não possuem pagamento no mês atual."""
+    from app.models.student import Student
+    from app.models.payment import Payment
+    from app.schemas.student import StudentPublic
+    from sqlalchemy import select, extract
+    from datetime import date
+
+    today = date.today()
+    
+    # 1. Alunos ativos
+    students = db.execute(
+        select(Student).where(Student.tenant_id == tenant.id, Student.status == 'active')
+    ).scalars().all()
+    
+    # 2. Pagamentos do mês atual
+    payments = db.execute(
+        select(Payment).where(
+            Payment.tenant_id == tenant.id,
+            extract('month', Payment.paid_on) == today.month,
+            extract('year', Payment.paid_on) == today.year
+        )
+    ).scalars().all()
+    
+    paid_student_ids = {p.student_id for p in payments}
+    
+    # 3. Filtra os pendentes
+    pending = []
+    for s in students:
+        if s.id not in paid_student_ids:
+            # Usa o StudentOut para retornar os dados descriptografados (ex: phone)
+            pending.append(StudentPublic.model_validate(s))
+            
+    return pending

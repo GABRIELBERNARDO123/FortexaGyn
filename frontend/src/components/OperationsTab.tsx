@@ -1,3 +1,4 @@
+import { AlertTriangle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { TabType } from './Sidebar';
 import type { Coach, Student } from '../lib/api';
@@ -33,6 +34,7 @@ const primary = 'rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-sl
 export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMode, user, onMessage }: Props) {
   const [rows, setRows] = useState<Row[]>([]);
   const [summary, setSummary] = useState<Row | null>(null);
+  const [pendingPayments, setPendingPayments] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -81,6 +83,7 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
         setRows(await api.get<Row[]>(endpoint[tab], query));
         if (tab === 'financeiro') {
           setSummary(await api.get<Row>('/transactions/summary', { start: `${today().slice(0, 7)}-01`, end: today() }));
+          setPendingPayments(await api.get<Row[]>('/transactions/pending'));
         }
       }
     } catch (cause) {
@@ -190,6 +193,40 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
 
       {!loading && !error && (tab === 'overview' || tab === 'dashboard') && summary && (
         tab === 'overview' ? <Overview summary={summary} /> : <Dashboard summary={summary} isDarkMode={isDarkMode} />
+      )}
+
+      {!loading && !error && tab === 'financeiro' && pendingPayments.length > 0 && (
+        <div className={`${panel} border-amber-500/30 bg-amber-500/5 space-y-3`}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="text-amber-400 w-5 h-5" />
+            <h3 className="font-bold text-amber-400 text-sm">Mensalidades Pendentes no Mês ({pendingPayments.length})</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {pendingPayments.map(p => (
+              <div key={p.id} className="flex justify-between items-center bg-slate-900/50 p-3 rounded-xl border border-slate-700/50">
+                <div className="min-w-0">
+                  <p className="font-bold text-xs text-slate-200 truncate">{p.name}</p>
+                  <p className="text-[10px] text-slate-400">Vencimento: Dia {p.due_day}</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setFinancialMode('payment');
+                    setStudentId(p.id);
+                    setAmount(String(p.price));
+                    setPlan(p.plan);
+                    setDescription('');
+                    setDate(today());
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                  className="ml-2 shrink-0 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition"
+                >
+                  Cobrar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {!loading && !error && tab === 'financeiro' && summary && (
