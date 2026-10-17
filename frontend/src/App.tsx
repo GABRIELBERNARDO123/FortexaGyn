@@ -14,6 +14,7 @@ import { OperationsTab } from './components/OperationsTab';
 import { SaleModal } from './components/SaleModal';
 import { WhatsAppMessageModal, type WhatsAppDraft } from './components/WhatsAppMessageModal';
 import { AccountTab } from './components/AccountTab';
+import { RelatoriosTab } from './components/RelatoriosTab';
 import { api, type Coach, type Student, type Product } from './lib/api';
 import { initialConfig } from './mockData';
 import { can } from './lib/permissions';
@@ -376,6 +377,8 @@ export default function App() {
               onMessage={addToast}
             />
           )}
+
+          {activeTab === 'relatorios' && <RelatoriosTab />}
 
           {activeTab === 'conta' && user && tenant && (
             <AccountTab user={user} tenant={tenant} onLogout={handleLogout} onRefresh={refresh} />

@@ -37,4 +37,7 @@ class Assessment(UUIDMixin, CreatedAtMixin, UpdatedAtMixin, Base):
     measures: Mapped[dict] = mapped_column(EncryptedJSON("assessments.measures"), nullable=False, default=dict)
 
     notes: Mapped[str] = mapped_column(EncryptedText("assessments.notes"), nullable=False, default="")
+    attachment_name: Mapped[str | None] = mapped_column(EncryptedText("assessments.attachment_name"), nullable=True)
+    attachment_type: Mapped[str | None] = mapped_column(EncryptedText("assessments.attachment_type"), nullable=True)
+    attachment_data: Mapped[str | None] = mapped_column(EncryptedText("assessments.attachment_data"), nullable=True)
     student: Mapped["Student"] = relationship()  # noqa: F821

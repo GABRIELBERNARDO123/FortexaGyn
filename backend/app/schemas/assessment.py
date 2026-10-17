@@ -13,6 +13,9 @@ class AssessmentCreate(BaseModel):
     muscle_mass_kg: float | None = Field(None, ge=0, le=300, allow_inf_nan=False)
     measures: dict[str, float] = Field(default_factory=dict, max_length=40)
     notes: str = Field("", max_length=2000)
+    attachment_name: str | None = None
+    attachment_type: str | None = None
+    attachment_data: str | None = None
 
 
 class AssessmentUpdate(BaseModel):
@@ -22,6 +25,9 @@ class AssessmentUpdate(BaseModel):
     muscle_mass_kg: float | None = Field(None, ge=0, le=300, allow_inf_nan=False)
     measures: dict[str, float] | None = Field(None, max_length=40)
     notes: str | None = Field(None, max_length=2000)
+    attachment_name: str | None = None
+    attachment_type: str | None = None
+    attachment_data: str | None = None
 
 
 class AssessmentOut(BaseModel):
@@ -35,3 +41,6 @@ class AssessmentOut(BaseModel):
     muscle_mass_kg: float | None
     measures: dict
     notes: str
+    attachment_name: str | None
+    attachment_type: str | None
+    attachment_data: str | None

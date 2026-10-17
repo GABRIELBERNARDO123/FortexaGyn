@@ -1,10 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, BarChart3, CalendarCheck2, Users, Receipt, ShoppingBag, ClipboardList, FileCheck2, GraduationCap, Settings, Sun, Moon, Download, Feather, UserRoundCog } from 'lucide-react';
+import { LayoutDashboard, BarChart3, CalendarCheck2, Users, Receipt, ShoppingBag, ClipboardList, FileCheck2, GraduationCap, Settings, Sun, Moon, Download, Feather, UserRoundCog, FileText } from 'lucide-react';
 import { GymConfig, AppTheme } from '../types';
 import { can } from '../lib/permissions';
 import type { UserPublic } from '../contexts/AuthContext';
 
-export type TabType = 'overview' | 'dashboard' | 'checkin' | 'alunos' | 'financeiro' | 'loja' | 'treinos' | 'avaliacoes' | 'professores' | 'conta';
+export type TabType = 'overview' | 'dashboard' | 'checkin' | 'alunos' | 'financeiro' | 'loja' | 'treinos' | 'avaliacoes' | 'professores' | 'relatorios' | 'conta';
 
 interface Props {
   activeTab: TabType;
@@ -43,6 +43,7 @@ export const Sidebar: React.FC<Props> = ({
     { id: 'treinos' as TabType, label: 'Fichas de Treino', icon: ClipboardList },
     { id: 'avaliacoes' as TabType, label: 'Avaliações Físicas', icon: FileCheck2 },
     { id: 'professores' as TabType, label: 'Professores', icon: GraduationCap },
+    { id: 'relatorios' as TabType, label: 'Relatórios', icon: FileText },
     { id: 'conta' as TabType, label: 'Conta', icon: UserRoundCog },
   ];
 
@@ -71,7 +72,7 @@ export const Sidebar: React.FC<Props> = ({
             )}
           </div>
           <nav className="p-3.5 space-y-1">
-            {navItems.filter((item) => item.id === 'conta' || can(user, ({ overview: 'students:read', dashboard: 'reports:read_operational', checkin: 'checkins:read', alunos: 'students:read', financeiro: 'finance:read', loja: 'products:read', treinos: 'workouts:read', avaliacoes: 'assessments:read', professores: 'coaches:read' } as Partial<Record<TabType, string>>)[item.id] || '')).map((item) => {
+            {navItems.filter((item) => item.id === 'conta' || can(user, ({ overview: 'students:read', dashboard: 'reports:read_operational', checkin: 'checkins:read', alunos: 'students:read', financeiro: 'finance:read', loja: 'products:read', treinos: 'workouts:read', avaliacoes: 'assessments:read', professores: 'coaches:read', relatorios: 'reports:read' } as Partial<Record<TabType, string>>)[item.id] || '')).map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (

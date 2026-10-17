@@ -20,6 +20,7 @@ from app.api.v1.students import router as students_router
 from app.api.v1.transactions import router as transactions_router
 from app.api.v1.users import router as users_router
 from app.api.v1.workouts import router as workouts_router
+from app.api.v1.reports import router as reports_router
 from app.core.config import get_settings
 from app.core.rate_limit import limiter
 
@@ -141,3 +142,4 @@ app.include_router(sales_router, prefix=settings.API_V1_PREFIX)
 app.include_router(workouts_router, prefix=settings.API_V1_PREFIX)
 app.include_router(assessments_router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard_router, prefix=settings.API_V1_PREFIX)
+app.include_router(reports_router, prefix=settings.API_V1_PREFIX)

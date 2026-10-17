@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Paperclip, Download } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { TabType } from './Sidebar';
 import type { Coach, Student } from '../lib/api';
@@ -54,6 +54,7 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
   const [plan, setPlan] = useState<'Mensal' | 'Trimestral' | 'Semestral' | 'Anual'>('Mensal');
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [assessmentFile, setAssessmentFile] = useState<{name: string, type: string, data: string} | null>(null);
 
   const endpoint = useMemo(() => ({
     checkin: '/checkins', financeiro: '/transactions', treinos: '/workouts', avaliacoes: '/assessments',
@@ -113,6 +114,9 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
         payload = {
           student_id: studentId,
           assessed_on: date,
+          attachment_name: assessmentFile?.name || null,
+          attachment_type: assessmentFile?.type || null,
+          attachment_data: assessmentFile?.data || null,
           weight_kg: weight ? Number(weight) : null,
           height_cm: height ? Number(height) : null,
           body_fat_pct: bodyFat ? Number(bodyFat) : null,
@@ -132,7 +136,7 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
         const target = tab === 'financeiro' && financialMode === 'payment' ? '/payments' : endpoint[tab as keyof typeof endpoint];
         await api.post(target, payload);
       }
-      setDescription(''); setAmount(''); setWeight(''); setHeight(''); setBodyFat(''); setMuscleMass(''); setExerciseNames(''); setCoachId('');
+      setDescription(''); setAmount(''); setWeight(''); setAssessmentFile(null); setHeight(''); setBodyFat(''); setMuscleMass(''); setExerciseNames(''); setCoachId('');
       setEditingId(null);
       onMessage(editingId ? 'Registro atualizado.' : 'Registro salvo com sucesso.');
       await load();
@@ -151,6 +155,11 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
     setCategory(row.category || 'mensalidade');
     setKind(row.kind === 'expense' ? 'expense' : 'income');
     setDate(row.occurred_on || row.valid_from || row.assessed_on || today());
+    if (row.attachment_name && row.attachment_data) {
+      setAssessmentFile({ name: row.attachment_name, type: row.attachment_type, data: row.attachment_data });
+    } else {
+      setAssessmentFile(null);
+    }
     setWeight(row.weight_kg == null ? '' : String(row.weight_kg));
     setHeight(row.height_cm == null ? '' : String(row.height_cm));
     setBodyFat(row.body_fat_pct == null ? '' : String(row.body_fat_pct));
@@ -161,7 +170,7 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
   };
 
   const cancelEdit = () => {
-    setEditingId(null); setDescription(''); setAmount(''); setWeight(''); setHeight(''); setBodyFat(''); setMuscleMass(''); setExerciseNames(''); setCoachId('');
+    setEditingId(null); setAssessmentFile(null); setDescription(''); setAmount(''); setWeight(''); setHeight(''); setBodyFat(''); setMuscleMass(''); setExerciseNames(''); setCoachId('');
     setDate(today()); setStudentId('');
   };
 
@@ -281,6 +290,19 @@ export function OperationsTab({ tab, students, coaches, focusStudentId, isDarkMo
               <label className="space-y-1 text-xs font-semibold text-slate-300">Altura (cm)<input min="0" step="0.1" type="number" value={height} onChange={(e) => setHeight(e.target.value)} className={field} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-300">Gordura corporal (%)<input min="0" max="100" step="0.1" type="number" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} className={field} /></label>
               <label className="space-y-1 text-xs font-semibold text-slate-300">Massa muscular (kg)<input min="0" step="0.1" type="number" value={muscleMass} onChange={(e) => setMuscleMass(e.target.value)} className={field} /></label>
+            <label className="sm:col-span-2 flex items-center gap-2 mt-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer hover:bg-slate-700 transition">
+              <Paperclip size={16} className="text-emerald-400" />
+              <span className="text-xs font-bold text-slate-200">{assessmentFile ? assessmentFile.name : 'Anexar Laudo / Exame (PDF, JPG)'}</span>
+              <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) return onMessage('Arquivo muito grande (máx 5MB)', 'warning');
+                const reader = new FileReader();
+                reader.onload = () => setAssessmentFile({ name: file.name, type: file.type, data: (reader.result as string).split(',')[1] });
+                reader.readAsDataURL(file);
+              }} />
+              {assessmentFile && <button type="button" onClick={(e) => { e.preventDefault(); setAssessmentFile(null); }} className="ml-auto text-rose-400 hover:text-rose-300 text-xs font-bold">Remover</button>}
+            </label>
             </>}
             {tab === 'treinos' && <label className="space-y-1 text-xs font-semibold text-slate-300">Professor (opcional)
               <select value={coachId} onChange={(e) => setCoachId(e.target.value)} className={field}><option value="">Sem professor</option>{coaches.map((coach) => <option key={coach.id} value={coach.id}>{coach.name}</option>)}</select>
@@ -349,5 +371,27 @@ function RecordRow({ row, tab, students, canEdit, canDelete, onEdit, onRemove }:
     : tab === 'financeiro' ? `${row.kind === 'income' ? 'Entrada' : 'Saída'} · ${row.description || row.category} · ${formatBRL(row.amount)} · ${formatDateBR(row.occurred_on)}`
     : tab === 'treinos' ? `${student?.name || 'Aluno'} · ${row.name} · válido desde ${formatDateBR(row.valid_from)}`
     : `${student?.name || 'Aluno'} · ${formatDateBR(row.assessed_on)} · ${row.weight_kg ? `${row.weight_kg} kg` : 'sem peso informado'}`;
-  return <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-800/70 px-3 py-2 text-sm"><span>{label}</span>{(canEdit && tab !== 'checkin' || canDelete) && <span className="flex gap-2">{canEdit && tab !== 'checkin' && <button type="button" onClick={onEdit} className="rounded-lg border border-slate-600 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700">Editar</button>}{canDelete && <button type="button" onClick={onRemove} className="rounded-lg border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-300 hover:bg-rose-500/10">Remover</button>}</span>}</div>;
+  return <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-800/70 px-3 py-2 text-sm"><span>{label}</span><div className="flex gap-2 items-center">
+                    {tab === 'avaliacoes' && row.attachment_name && row.attachment_data && (
+                      <button type="button" title="Baixar Anexo" onClick={() => {
+                        const byteCharacters = atob(row.attachment_data);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        const blob = new Blob([new Uint8Array(byteNumbers)], { type: row.attachment_type });
+                        const url = URL.createObjectURL(blob);
+                        if (row.attachment_type.includes('pdf') || row.attachment_type.includes('image')) window.open(url, '_blank');
+                        else { const a = document.createElement('a'); a.href = url; a.download = row.attachment_name; a.click(); }
+                        URL.revokeObjectURL(url);
+                      }} className="rounded-lg border border-emerald-500/30 px-2.5 py-1 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10 flex items-center gap-1">
+                        <Paperclip size={12}/> Anexo
+                      </button>
+                    )}
+                    {(canEdit && tab !== 'checkin' || canDelete) && (
+                      <span className="flex gap-2">
+                        {canEdit && tab !== 'checkin' && <button type="button" onClick={onEdit} className="rounded-lg border border-slate-600 px-2.5 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700">Editar</button>}
+                        {canDelete && <button type="button" onClick={onRemove} className="rounded-lg border border-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-300 hover:bg-rose-500/10">Remover</button>}
+                      </span>
+                    )}
+                  </div>
+                </div>;
 }
