@@ -19,7 +19,7 @@ class Student(UUIDMixin, CreatedAtMixin, UpdatedAtMixin, Base):
             name="ck_students_plan",
         ),
         CheckConstraint(
-            "status IN ('active','inactive')",
+            "status IN ('active','inactive','desistente')",
             name="ck_students_status",
         ),
         CheckConstraint(

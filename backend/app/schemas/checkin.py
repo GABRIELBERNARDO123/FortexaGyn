@@ -19,3 +19,8 @@ class CheckinOut(BaseModel):
 
 class CheckinWithStudent(CheckinOut):
     student_name: str | None = None
+
+
+class CheckinConfirmIn(BaseModel):
+    """Body opcional do endpoint POST /checkins/confirm/{id}."""
+    note: str = Field("", max_length=500)

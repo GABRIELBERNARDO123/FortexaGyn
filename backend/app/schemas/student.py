@@ -20,7 +20,7 @@ class StudentCreate(BaseModel):
     plan: Literal["Mensal", "Trimestral", "Semestral", "Anual"] = "Mensal"
     price: float = Field(0, ge=0, le=10_000_000, allow_inf_nan=False)
     due_day: int = Field(10, ge=1, le=31)
-    status: Literal["active", "inactive"] = "active"
+    status: Literal["active", "inactive", "desistente"] = "active"
     coach_id: uuid.UUID | None = None
 
 
@@ -34,7 +34,7 @@ class StudentUpdate(BaseModel):
     plan: Literal["Mensal", "Trimestral", "Semestral", "Anual"] | None = None
     price: float | None = Field(None, ge=0, le=10_000_000, allow_inf_nan=False)
     due_day: int | None = Field(None, ge=1, le=31)
-    status: Literal["active", "inactive"] | None = None
+    status: Literal["active", "inactive", "desistente"] | None = None
     coach_id: uuid.UUID | None = None
 
 

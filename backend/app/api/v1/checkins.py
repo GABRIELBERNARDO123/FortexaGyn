@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, status
 
 from app.core.permissions import permission_dependency
 from app.core.deps import CurrentTenant, DBSession
-from app.schemas.checkin import CheckinCreate, CheckinOut
+from app.schemas.checkin import CheckinConfirmIn, CheckinCreate, CheckinOut
 from app.services import checkin_service
 
 router = APIRouter(prefix="/checkins", tags=["checkins"])
@@ -46,14 +46,21 @@ def list_today(db: DBSession, tenant: CurrentTenant):
 
 
 @router.post("/confirm/{student_id}", response_model=CheckinOut, status_code=status.HTTP_201_CREATED)
-def confirm_arrival(student_id: uuid.UUID, db: DBSession, tenant: CurrentTenant):
+def confirm_arrival(
+    student_id: uuid.UUID,
+    db: DBSession,
+    tenant: CurrentTenant,
+    payload: CheckinConfirmIn | None = None,
+):
     """
     Confirma chegada do aluno (cria check-in).
-    Se já existe check-in hoje, retorna o existente.
+    Body opcional: { "note": "observação da recepção" }
     """
     from app.services import checkin_service as cs
     from app.schemas.checkin import CheckinCreate as CC
-    return cs.create_checkin(db, tenant.id, CC(student_id=student_id, note='Tablet recepção'))
+    note = (payload.note if payload else "") or ""
+    note = note.strip() or "Check-in tablet"
+    return cs.create_checkin(db, tenant.id, CC(student_id=student_id, note=note))
 
 
 # =========================================================================

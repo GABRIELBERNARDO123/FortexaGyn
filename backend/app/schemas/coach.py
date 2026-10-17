@@ -10,7 +10,7 @@ class CoachCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=120)
     specialty: str | None = Field(None, max_length=120)
     phone: str | None = Field(None, max_length=20)
-    email: EmailStr | None = None
+    email: EmailStr
     status: str = Field("active", pattern=r"^(active|inactive)$")
 
 

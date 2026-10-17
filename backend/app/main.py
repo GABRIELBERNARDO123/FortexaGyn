@@ -37,9 +37,45 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.exception_handler(RequestValidationError)
-async def invalid_request(_request: Request, _exc: RequestValidationError) -> JSONResponse:
-    # Keep validation responses generic; do not echo submitted values.
-    return JSONResponse(status_code=400, content={"detail": "Entrada inválida"})
+async def invalid_request(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    erros = []
+    for error in exc.errors():
+        campo = error["loc"][-1] if error["loc"] else "geral"
+        tipo = error["type"]
+        msg_original = error["msg"]
+
+        if "email" in msg_original.lower() or "email" in tipo.lower():
+            problema = "E-mail inválido"
+            exemplo = "nome@academia.com.br"
+        elif tipo == "missing":
+            problema = "Campo obrigatório"
+            exemplo = "Preencha este campo"
+        elif tipo == "string_too_short":
+            problema = "Texto muito curto"
+            exemplo = "Use pelo menos 2 caracteres"
+        elif tipo == "string_too_long":
+            problema = "Texto muito longo"
+            exemplo = "Reduza o tamanho do texto"
+        elif tipo == "string_pattern_mismatch":
+            problema = "Valor não permitido"
+            exemplo = "Use 'active' ou 'inactive'"
+        else:
+            problema = msg_original
+            exemplo = "Verifique o formato deste campo"
+
+        erros.append({
+            "campo": campo,
+            "problema": problema,
+            "exemplo": exemplo
+        })
+
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": "Verifique os campos abaixo",
+            "erros": erros
+        }
+    )
 
 app.add_middleware(
     CORSMiddleware,

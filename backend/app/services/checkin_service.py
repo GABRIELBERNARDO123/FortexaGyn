@@ -124,6 +124,7 @@ def list_today_schedule(db, tenant_id):
             "scheduled": is_scheduled(s),
             "checked_in": c is not None,
             "checked_in_at": c.checked_in_at.isoformat() if c else None,
+            "checkin_note": (c.note if c else None) or None,
             "missed_today": faltou_hoje,
             "missed_info": m,          # {missed_date, new_date, new_time, reason, id}
             "rescheduled_info": r,     # {missed_date, new_date, ...} ativo
