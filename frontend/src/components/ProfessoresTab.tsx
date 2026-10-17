@@ -22,19 +22,34 @@ export function ProfessoresTab({ coaches, students, isDarkMode, canCreate, canUp
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const openNew = () => { setCoachToEdit(null); setName(''); setSpecialty(''); setPhone(''); setEmail(''); setError(''); setIsOpen(true); };
-  const openEdit = (coach: Coach) => { setCoachToEdit(coach); setName(coach.name); setSpecialty(coach.specialty || ''); setPhone(coach.phone || ''); setEmail(coach.email || ''); setError(''); setIsOpen(true); };
+  const openNew = () => { setCoachToEdit(null); setName(''); setSpecialty(''); setPhone(''); setEmail(''); setError(''); setFieldErrors({}); setIsOpen(true); };
+  const openEdit = (coach: Coach) => { setCoachToEdit(coach); setName(coach.name); setSpecialty(coach.specialty || ''); setPhone(coach.phone || ''); setEmail(coach.email || ''); setError(''); setFieldErrors({}); setIsOpen(true); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    setSaving(true); setError('');
+    setSaving(true); setError(''); setFieldErrors({});
     try {
+      // Manda email normal agora (obrigatório)
       await onSaveCoach({ name: name.trim(), specialty: specialty.trim(), phone: phone.trim(), email: email.trim() }, coachToEdit?.id);
       setIsOpen(false); setCoachToEdit(null);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o professor.');
+    } catch (cause: any) {
+      // Tenta pegar os erros do backend. (O App.tsx precisa repassar o cause inteiro)
+      const detail = cause?.detail;
+      const erros = cause?.erros || cause?.response?.data?.erros; 
+      
+      if (Array.isArray(erros) && erros.length > 0) {
+        const mapa: Record<string, string> = {};
+        erros.forEach((err: any) => {
+          mapa[err.campo] = `${err.problema} (Ex: ${err.exemplo})`;
+        });
+        setFieldErrors(mapa);
+        setError('Verifique os campos destacados abaixo.');
+      } else {
+        setError(typeof detail === 'string' ? detail : cause?.message || 'Não foi possível salvar o professor.');
+      }
     } finally { setSaving(false); }
   };
 
@@ -57,6 +72,7 @@ export function ProfessoresTab({ coaches, students, isDarkMode, canCreate, canUp
               <div className="mt-3 text-xs space-y-1 text-slate-400">
                 <div className="flex justify-between"><span>Alunos:</span><span className="text-slate-200 font-bold">{assigned.length}</span></div>
                 {c.phone && <div className="flex justify-between"><span>Tel:</span><span className="text-slate-200">{c.phone}</span></div>}
+                {c.email && <div className="flex justify-between"><span>Email:</span><span className="text-slate-200 truncate">{c.email}</span></div>}
               </div>
               {(c.phone || canUpdate || canDelete) && <div className="mt-3 flex flex-wrap gap-2">{c.phone && <button onClick={() => onOpenWhatsApp(c)} className="flex-1 py-1.5 rounded-lg text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300">WhatsApp</button>}{canUpdate && <button onClick={() => openEdit(c)} className="flex-1 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200">Editar</button>}{canDelete && <button onClick={() => onDeleteCoach(c.id)} className="flex-1 py-1.5 rounded-lg text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400">Remover</button>}</div>}
             </div>
@@ -65,13 +81,32 @@ export function ProfessoresTab({ coaches, students, isDarkMode, canCreate, canUp
       </div>
       {isOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border p-5 space-y-3 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
+          <form noValidate onSubmit={handleSave} className={`w-full max-w-md rounded-2xl border p-5 space-y-3 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
             <h4 className="font-bold text-sm">{coachToEdit ? 'Editar Professor' : 'Cadastrar Professor'}</h4>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome completo" className="w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" />
-            <input value={specialty} onChange={(e) => setSpecialty(e.target.value)} placeholder="Especialidade" className="w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" />
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefone" className="w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" />
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (opcional)" className="w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" />
-            {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
+            
+            <div>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome completo" className={`w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border ${fieldErrors.name ? 'border-rose-500' : 'border-slate-700'} text-slate-100`} />
+              {fieldErrors.name && <span className="text-[10px] text-rose-400 font-bold ml-1">{fieldErrors.name}</span>}
+            </div>
+
+            <div>
+              <input value={specialty} onChange={(e) => setSpecialty(e.target.value)} placeholder="Especialidade" className={`w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border ${fieldErrors.specialty ? 'border-rose-500' : 'border-slate-700'} text-slate-100`} />
+              {fieldErrors.specialty && <span className="text-[10px] text-rose-400 font-bold ml-1">{fieldErrors.specialty}</span>}
+            </div>
+
+            <div>
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefone" className={`w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border ${fieldErrors.phone ? 'border-rose-500' : 'border-slate-700'} text-slate-100`} />
+              {fieldErrors.phone && <span className="text-[10px] text-rose-400 font-bold ml-1">{fieldErrors.phone}</span>}
+            </div>
+
+            <div>
+              {/* Agora o email é required no HTML e visual */}
+              <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className={`w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border ${fieldErrors.email ? 'border-rose-500' : 'border-slate-700'} text-slate-100`} />
+              {fieldErrors.email && <span className="text-[10px] text-rose-400 font-bold ml-1">{fieldErrors.email}</span>}
+            </div>
+
+            {error && <div role="alert" className="text-xs bg-rose-500/10 text-rose-300 p-2 rounded-xl">{error}</div>}
+            
             <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-xl text-xs text-slate-400">Cancelar</button>
               <button type="submit" disabled={saving} className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 disabled:opacity-50">{saving ? 'Salvando…' : 'Salvar'}</button>

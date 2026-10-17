@@ -52,7 +52,13 @@ export function AlunosTab({ students, coaches, isDarkMode, canCreate, canUpdate,
               <div key={s.id} className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-slate-900/70 border-slate-800' : 'bg-white border-slate-200'}`}>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="min-w-0"><h4 className="font-bold text-sm truncate">{s.name}</h4><p className="text-xs text-slate-400">{s.phone}</p></div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">{s.status}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${
+                    s.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                    s.status === 'inactive' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
+                    'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                  }`}>
+                    {s.status === 'active' ? 'Ativo' : s.status === 'inactive' ? 'Inativo' : 'Desistente'}
+                  </span>
                 </div>
                 <div className="text-xs space-y-1 text-slate-400">
                   <div className="flex justify-between"><span>Plano:</span><span className="text-slate-200">{s.plan} ({formatBRL(s.price)})</span></div>

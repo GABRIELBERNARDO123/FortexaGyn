@@ -2,16 +2,26 @@
  * Cliente HTTP para a API FastAPI.
  * - Envia cookies (credentials: 'include').
  * - Lança ApiError em respostas HTTP 4xx/5xx.
- * - Todas as rotas passam por /api/v1/* (proxy do Vite redireciona em dev).
+ * - Preserva o payload completo (detail + erros).
  */
 
 export class ApiError extends Error {
   status: number;
   detail: unknown;
-  constructor(status: number, detail: unknown) {
-    super(typeof detail === 'string' ? detail : `HTTP ${status}`);
+  erros?: { campo: string; problema: string; exemplo: string }[];
+
+  constructor(status: number, payload: any) {
+    let msg = `HTTP ${status}`;
+    if (typeof payload === 'string') {
+      msg = payload;
+    } else if (payload?.detail && typeof payload.detail === 'string') {
+      msg = payload.detail;
+    }
+
+    super(msg);
     this.status = status;
-    this.detail = detail;
+    this.detail = payload?.detail || payload;
+    this.erros = payload?.erros;
   }
 }
 
@@ -55,11 +65,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const data = text ? safeJsonParse(text) : null;
 
   if (!response.ok) {
-    const detail =
-      data && typeof data === 'object' && 'detail' in data
-        ? (data as { detail: unknown }).detail
-        : text;
-    throw new ApiError(response.status, detail);
+    // Passa o objeto inteiro (com detail e erros) para o ApiError
+    throw new ApiError(response.status, data || text);
   }
 
   return data as T;
@@ -74,14 +81,13 @@ function safeJsonParse(text: string): unknown {
 }
 
 // ===== TIPOS DAS ENTIDADES =====
-
 export interface Coach {
   id: string;
   name: string;
   specialty: string | null;
   phone: string | null;
   email: string | null;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'desistente';
   created_at: string;
 }
 
@@ -96,7 +102,7 @@ export interface Student {
   plan: 'Mensal' | 'Trimestral' | 'Semestral' | 'Anual';
   price: number;
   due_day: number;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'desistente';
   coach_id: string | null;
   created_at: string;
 }
@@ -117,7 +123,7 @@ export interface CoachInput {
   specialty?: string | null;
   phone?: string | null;
   email?: string | null;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'desistente';
 }
 
 export interface StudentInput {
@@ -130,7 +136,7 @@ export interface StudentInput {
   plan?: 'Mensal' | 'Trimestral' | 'Semestral' | 'Anual';
   price?: number;
   due_day?: number;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'desistente';
   coach_id?: string | null;
 }
 
@@ -144,7 +150,6 @@ export interface ProductInput {
 }
 
 // ===== CLIENTES POR ENTIDADE =====
-
 export const api = {
   get: <T>(path: string, query?: RequestOptions['query']) =>
     request<T>(path, { method: 'GET', query }),

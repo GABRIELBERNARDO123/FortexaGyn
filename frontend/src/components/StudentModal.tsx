@@ -17,6 +17,7 @@ export function StudentModal({ isOpen, onClose, onSave, studentToEdit, coaches }
   const [phone, setPhone] = useState('');
   const [birth, setBirth] = useState('');
   const [plan, setPlan] = useState<'Mensal' | 'Trimestral' | 'Semestral' | 'Anual'>('Mensal');
+  const [status, setStatus] = useState<'active' | 'inactive' | 'desistente'>('active');
   const [price, setPrice] = useState('139.90');
   const [dueDay, setDueDay] = useState('10');
   const [coachId, setCoachId] = useState<string>('');
@@ -28,12 +29,14 @@ export function StudentModal({ isOpen, onClose, onSave, studentToEdit, coaches }
     if (studentToEdit) {
       setName(studentToEdit.name); setPhone(studentToEdit.phone); setBirth(studentToEdit.birth_date);
       setPlan(studentToEdit.plan); setPrice(String(studentToEdit.price)); setDueDay(String(studentToEdit.due_day));
+      setStatus(studentToEdit.status);
       setCoachId(studentToEdit.coach_id ?? '');
       setMedicalRecord(studentToEdit.medical_record || '');
       setWorkoutTime(studentToEdit.workout_time || '');
       setWorkoutDays(studentToEdit.workout_days || []);
     } else {
       setName(''); setPhone(''); setBirth(''); setPlan('Mensal'); setPrice('139.90'); setDueDay('10');
+      setStatus('active');
       setCoachId(coaches[0]?.id ?? '');
       setMedicalRecord(''); setWorkoutTime(''); setWorkoutDays([]);
     }
@@ -45,7 +48,7 @@ export function StudentModal({ isOpen, onClose, onSave, studentToEdit, coaches }
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !birth) return;
     onSave({
-      name: name.trim(), phone: phone.trim(), birth_date: birth, plan,
+      name: name.trim(), phone: phone.trim(), birth_date: birth, plan, status,
       price: parseFloat(price) || 0, due_day: parseInt(dueDay) || 10,
       coach_id: coachId || null,
       medical_record: medicalRecord.trim(), workout_time: workoutTime || null, workout_days: workoutDays,
@@ -65,9 +68,14 @@ export function StudentModal({ isOpen, onClose, onSave, studentToEdit, coaches }
         </div>
         <fieldset className="rounded-xl border border-slate-800 p-3"><legend className="px-1 text-[11px] font-bold text-slate-400">Dias de treino</legend><div className="flex flex-wrap gap-x-3 gap-y-2">{workoutWeekdays.map((day) => <label key={day} className="flex items-center gap-1.5 text-xs text-slate-300"><input type="checkbox" checked={workoutDays.includes(day)} onChange={(e) => setWorkoutDays((current) => e.target.checked ? [...current, day] : current.filter((value) => value !== day))} />{day}</label>)}</div></fieldset>
         <label className="block text-[11px] font-bold text-slate-400">Prontuário / observações médicas<textarea maxLength={5000} rows={3} value={medicalRecord} onChange={(e) => setMedicalRecord(e.target.value)} className="mt-1 w-full text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" /></label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           <select value={plan} onChange={(e) => setPlan(e.target.value as any)} className="text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100">
             <option value="Mensal">Mensal</option><option value="Trimestral">Trimestral</option><option value="Semestral">Semestral</option><option value="Anual">Anual</option>
+          </select>
+          <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100">
+            <option value="active">Ativo</option>
+            <option value="inactive">Inativo</option>
+            <option value="desistente">Desistente</option>
           </select>
           <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Preço" className="text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" />
           <input type="number" min="1" max="31" value={dueDay} onChange={(e) => setDueDay(e.target.value)} placeholder="Venc." className="text-xs rounded-xl px-3 py-2.5 bg-slate-800 border border-slate-700 text-slate-100" />

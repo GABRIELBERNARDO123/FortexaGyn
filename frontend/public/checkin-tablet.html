@@ -21,6 +21,10 @@
           <p class="text-sm text-slate-400" id="today-label">Carregando...</p>
         </div>
       </div>
+      <button onclick="doLogout()" title="Sair do tablet" aria-label="Sair do tablet"
+        class="text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg p-2 transition opacity-40 hover:opacity-100">
+        <i class="fa-solid fa-right-from-bracket text-lg"></i>
+      </button>
     </div>
   </header>
 
@@ -83,6 +87,26 @@
       <div class="flex gap-2 pt-2">
         <button onclick="closeModal()" class="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-bold">Cancelar</button>
         <button id="modal-confirm" class="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-black">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de observação ao confirmar chegada -->
+  <div id="obs-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="font-bold text-white text-lg">Confirmar chegada</h3>
+        <button onclick="closeObsModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+      <p class="text-sm text-slate-400">Aluno: <span id="obs-student" class="text-white font-bold"></span></p>
+
+      <label class="block text-xs font-bold text-slate-400 uppercase">Observação (opcional)</label>
+      <textarea id="obs-note" rows="3" maxlength="500" placeholder="Ex: aluno chegou acompanhado, problema no tornozelo..."
+        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white placeholder-slate-500 focus:border-orange-500 focus:outline-none resize-none"></textarea>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeObsModal()" class="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-bold">Cancelar</button>
+        <button id="obs-confirm" class="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-black">Confirmar chegada</button>
       </div>
     </div>
   </div>
@@ -175,7 +199,7 @@
                       class="px-4 py-3 rounded-xl border border-rose-500/40 text-rose-300 hover:bg-rose-500/10 font-bold text-sm transition active:scale-95">
                       <i class="fa-solid fa-calendar-xmark"></i> Não vou vir
                     </button>
-                    <button onclick="confirmArrival('${s.id}')"
+                    <button onclick="openObsModal('${s.id}')"
                       class="px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-black text-sm transition active:scale-95">
                       <i class="fa-solid fa-hand-wave"></i> Chegou
                     </button>
@@ -296,10 +320,38 @@
       }
     }
 
-    async function confirmArrival(studentId) {
+    let currentConfirmStudentId = null;
+
+    function openObsModal(studentId) {
+      currentConfirmStudentId = studentId;
+      const student = schedule.find(s => s.id === studentId);
+      document.getElementById('obs-student').textContent = student ? student.name : 'Aluno';
+      document.getElementById('obs-note').value = '';
+      const m = document.getElementById('obs-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+      setTimeout(() => document.getElementById('obs-note').focus(), 50);
+    }
+
+    function closeObsModal() {
+      const m = document.getElementById('obs-modal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+      currentConfirmStudentId = null;
+    }
+
+    async function confirmArrivalNow() {
+      const studentId = currentConfirmStudentId;
+      if (!studentId) return;
+      const note = document.getElementById('obs-note').value.trim();
+      const btn = document.getElementById('obs-confirm');
+      btn.disabled = true; btn.textContent = 'Confirmando...';
       try {
         const res = await fetch('/api/v1/checkins/confirm/' + studentId, {
-          method: 'POST', credentials: 'include',
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -307,11 +359,34 @@
         }
         const student = schedule.find(s => s.id === studentId);
         showToast(`${student ? student.name : 'Aluno'} — chegada confirmada!`, 'success');
+        closeObsModal();
         await loadToday();
       } catch (err) {
         showToast('Erro: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Confirmar chegada';
       }
     }
+
+    async function doLogout() {
+      if (!confirm('Sair do tablet? Você precisará logar novamente.')) return;
+      try {
+        await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+      } catch {}
+      window.location.href = '/';
+    }
+
+    // Atalhos de teclado
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeObsModal();
+      if (e.key === 'Enter' && currentConfirmStudentId && !e.shiftKey) {
+        // Enter confirma, Shift+Enter quebra linha no textarea
+        if (document.activeElement?.id === 'obs-note') {
+          e.preventDefault();
+          confirmArrivalNow();
+        }
+      }
+    });
 
     function showToast(msg, type) {
       const colors = type === 'error'
@@ -330,6 +405,7 @@
     });
 
     document.getElementById('modal-confirm').addEventListener('click', confirmReschedule);
+    document.getElementById('obs-confirm').addEventListener('click', confirmArrivalNow);
 
     loadToday();
     setInterval(loadToday, 30000);
